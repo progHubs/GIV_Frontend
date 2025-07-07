@@ -1,0 +1,112 @@
+{
+  "app": {
+    "name": "ጊቭ ማህበረሰብ",
+    "tagline": "ለማህበረሰቡ መልሶ መስጠት",
+    "loading": "በመጫን ላይ...",
+    "error": "ስህተት ተከስቷል",
+    "success": "ተሳክቷል",
+    "cancel": "ሰርዝ",
+    "save": "አስቀምጥ",
+    "edit": "አርም",
+    "delete": "ሰርዝ",
+    "confirm": "አረጋግጥ",
+    "back": "ተመለስ",
+    "next": "ቀጣይ",
+    "submit": "ላክ",
+    "close": "ዝጋ"
+  },
+  "navigation": {
+    "home": "መነሻ",
+    "campaigns": "ዘመቻዎች",
+    "events": "ዝግጅቶች",
+    "blog": "ብሎግ",
+    "about": "ስለ እኛ",
+    "contact": "ያግኙን",
+    "login": "ግባ",
+    "register": "ተመዝገብ",
+    "logout": "ውጣ",
+    "profile": "መገለጫ",
+    "dashboard": "ዳሽቦርድ"
+  },
+  "auth": {
+    "login": {
+      "title": "እንኳን ደህና መጡ",
+      "subtitle": "ወደ መለያዎ ይግቡ",
+      "email": "የኢሜል አድራሻ",
+      "password": "የይለፍ ቃል",
+      "remember": "አስታውሰኝ",
+      "forgot": "የይለፍ ቃልዎን ረሱት?",
+      "submit": "ግባ",
+      "noAccount": "መለያ የለዎትም?",
+      "signUp": "እዚህ ይመዝገቡ"
+    },
+    "register": {
+      "title": "መለያ ይፍጠሩ",
+      "subtitle": "ማህበረሰባችንን ይቀላቀሉ",
+      "fullName": "ሙሉ ስም",
+      "email": "የኢሜል አድራሻ",
+      "phone": "የስልክ ቁጥር",
+      "password": "የይለፍ ቃል",
+      "confirmPassword": "የይለፍ ቃል አረጋግጥ",
+      "language": "የተመረጠ ቋንቋ",
+      "terms": "የአገልግሎት ውሎችን እና የግላዊነት ፖሊሲን እቀበላለሁ",
+      "submit": "መለያ ፍጠር",
+      "hasAccount": "ቀደም ሲል መለያ አለዎት?",
+      "signIn": "እዚህ ይግቡ"
+    },
+    "forgotPassword": {
+      "title": "የይለፍ ቃል ዳግም አስተካክል",
+      "subtitle": "የዳግም ማስተካከያ መመሪያዎችን ለመቀበል ኢሜልዎን ያስገቡ",
+      "email": "የኢሜል አድራሻ",
+      "submit": "የዳግም ማስተካከያ ሊንክ ላክ",
+      "backToLogin": "ወደ መግቢያ ተመለስ"
+    },
+    "resetPassword": {
+      "title": "አዲስ የይለፍ ቃል ያስቀምጡ",
+      "subtitle": "አዲስ የይለፍ ቃልዎን ያስገቡ",
+      "password": "አዲስ የይለፍ ቃል",
+      "confirmPassword": "አዲስ የይለፍ ቃል አረጋግጥ",
+      "submit": "የይለፍ ቃል አዘምን"
+    },
+    "profile": {
+      "title": "የመገለጫ ቅንብሮች",
+      "personalInfo": "የግል መረጃ",
+      "security": "ደህንነት",
+      "preferences": "ምርጫዎች",
+      "fullName": "ሙሉ ስም",
+      "email": "የኢሜል አድራሻ",
+      "phone": "የስልክ ቁጥር",
+      "language": "የቋንቋ ምርጫ",
+      "profileImage": "የመገለጫ ምስል",
+      "changePassword": "የይለፍ ቃል ቀይር",
+      "currentPassword": "አሁን ያለ የይለፍ ቃል",
+      "newPassword": "አዲስ የይለፍ ቃል",
+      "confirmPassword": "የይለፍ ቃል አረጋግጥ",
+      "updateProfile": "መገለጫ አዘምን",
+      "updatePassword": "የይለፍ ቃል አዘምን"
+    },
+    "errors": {
+      "required": "ይህ መስክ ያስፈልጋል",
+      "invalidEmail": "እባክዎ ትክክለኛ የኢሜል አድራሻ ያስገቡ",
+      "passwordTooShort": "የይለፍ ቃል ቢያንስ 8 ቁምፊዎች መሆን አለበት",
+      "passwordMismatch": "የይለፍ ቃሎች አይዛመዱም",
+      "loginFailed": "ትክክል ያልሆነ ኢሜል ወይም የይለፍ ቃል",
+      "registrationFailed": "ምዝገባ አልተሳካም። እባክዎ እንደገና ይሞክሩ።",
+      "networkError": "የኔትወርክ ስህተት። እባክዎ ግንኙነትዎን ይፈትሹ።",
+      "serverError": "የአገልጋይ ስህተት። እባክዎ በኋላ ይሞክሩ።"
+    },
+    "success": {
+      "loginSuccess": "እንኳን ደህና መጡ!",
+      "registrationSuccess": "መለያ በተሳካ ሁኔታ ተፈጥሯል!",
+      "logoutSuccess": "ወጥተዋል",
+      "profileUpdated": "መገለጫ በተሳካ ሁኔታ ተዘምኗል",
+      "passwordChanged": "የይለፍ ቃል በተሳካ ሁኔታ ተቀይሯል",
+      "resetEmailSent": "የይለፍ ቃል ዳግም ማስተካከያ ኢሜል ተልኳል",
+      "passwordReset": "የይለፍ ቃል በተሳካ ሁኔታ ተዳግሞ ተስተካክሏል"
+    }
+  },
+  "languages": {
+    "en": "English",
+    "am": "አማርኛ"
+  }
+}
