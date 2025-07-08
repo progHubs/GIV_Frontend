@@ -1,102 +1,212 @@
+/**
+ * What We Do (Key Services) Section
+ * Redesigned according to GIV Homepage Structure: Health & Nutrition, Education, Emergency Aid
+ */
+
 import React from 'react';
-import ServiceCard from './ServiceCard';
+import { motion } from 'framer-motion';
 
 const ServicesSection: React.FC = () => {
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+      opacity: 1,
+      y: 0,
+    },
+  };
+
   const services = [
     {
       icon: (
-        <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+        <svg
+          className="w-12 h-12 text-theme-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
         </svg>
       ),
-      title: "Emergency Care",
-      description: "24/7 emergency medical services providing immediate care for critical health situations.",
-      features: ["Trauma care", "Emergency surgery", "Critical care transport"],
-      bgColor: "bg-red-100"
+      title: 'Health & Nutrition',
+      description:
+        'Comprehensive healthcare services including medical consultations, nutritional support, and preventive care programs for communities across Ethiopia.',
+      features: [
+        'Medical consultations',
+        'Nutritional support',
+        'Preventive care',
+        'Health screenings',
+      ],
+      bgColor: 'bg-theme-primary/5',
+      borderColor: 'border-theme-primary/20',
+      iconBg: 'bg-theme-primary/10',
     },
     {
       icon: (
-        <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        <svg
+          className="w-12 h-12 text-theme-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C20.168 18.477 18.582 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          />
         </svg>
       ),
-      title: "Preventive Care",
-      description: "Comprehensive health screenings and preventive measures to maintain community wellness.",
-      features: ["Health screenings", "Vaccinations", "Health education"],
-      bgColor: "bg-blue-100"
+      title: 'Education',
+      description:
+        'Educational programs focused on health literacy, disease prevention, and community empowerment through knowledge sharing and skill development.',
+      features: [
+        'Health education',
+        'Disease prevention',
+        'Community workshops',
+        'Skill development',
+      ],
+      bgColor: 'bg-theme-secondary/5',
+      borderColor: 'border-theme-secondary/20',
+      iconBg: 'bg-theme-secondary/10',
     },
     {
       icon: (
-        <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+        <svg
+          className="w-12 h-12 text-theme-primary"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 10V3L4 14h7v7l9-11h-7z"
+          />
         </svg>
       ),
-      title: "Maternal Health",
-      description: "Specialized care for mothers and children, ensuring safe pregnancies and healthy births.",
-      features: ["Prenatal care", "Safe delivery", "Postnatal support"],
-      bgColor: "bg-green-100"
+      title: 'Emergency Aid',
+      description:
+        'Rapid response emergency medical services, disaster relief, and critical care support for urgent healthcare needs and crisis situations.',
+      features: ['Emergency response', 'Disaster relief', 'Critical care', '24/7 availability'],
+      bgColor: 'bg-theme-accent/5',
+      borderColor: 'border-theme-accent/20',
+      iconBg: 'bg-theme-accent/10',
     },
-    {
-      icon: (
-        <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-        </svg>
-      ),
-      title: "Health Education",
-      description: "Community education programs promoting health awareness and disease prevention.",
-      features: ["Health workshops", "Disease prevention", "Nutrition guidance"],
-      bgColor: "bg-yellow-100"
-    },
-    {
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
-        </svg>
-      ),
-      title: "Medical Equipment",
-      description: "State-of-the-art medical equipment and technology for accurate diagnosis and treatment.",
-      features: ["Diagnostic tools", "Treatment equipment", "Mobile clinics"],
-      bgColor: "bg-indigo-100"
-    },
-    {
-      icon: (
-        <svg className="w-6 h-6 text-pink-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-        </svg>
-      ),
-      title: "Volunteer Programs",
-      description: "Opportunities for healthcare professionals and community members to contribute their skills.",
-      features: ["Medical volunteers", "Community outreach", "Training programs"],
-      bgColor: "bg-pink-100"
-    }
   ];
 
   return (
-    <div className="py-16 lg:py-24 bg-gray-50">
+    <section className="py-16 lg:py-24 bg-theme-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
-            Our Services
-          </h2>
-          <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-            Comprehensive healthcare solutions designed to meet the diverse needs of Ethiopian communities.
-          </p>
-        </div>
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-100px' }}
+          className="space-y-16"
+        >
+          {/* Section Header */}
+          <motion.div variants={itemVariants} className="text-center space-y-4">
+            <motion.h2
+              className="text-3xl lg:text-4xl font-bold text-theme-primary"
+              whileHover={{ scale: 1.02 }}
+              transition={{ duration: 0.2 }}
+            >
+              What We Do
+            </motion.h2>
+            <motion.p className="text-lg lg:text-xl text-theme-muted max-w-3xl mx-auto leading-relaxed">
+              Our core programs are designed to address the most critical healthcare needs in
+              Ethiopian communities through comprehensive, sustainable solutions.
+            </motion.p>
+          </motion.div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((service, index) => (
-            <ServiceCard
-              key={index}
-              icon={service.icon}
-              title={service.title}
-              description={service.description}
-              features={service.features}
-              bgColor={service.bgColor}
-            />
-          ))}
-        </div>
+          {/* Services Grid */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {services.map(service => (
+              <motion.div
+                key={service.title}
+                variants={itemVariants}
+                whileHover={{ y: -2, scale: 1.002 }}
+                transition={{ duration: 0.3 }}
+                className={`${service.bgColor} ${service.borderColor} border-2 rounded-2xl p-8 text-center space-y-6 shadow-lg hover:shadow-xl transition-shadow duration-300`}
+              >
+                {/* Icon */}
+                <motion.div
+                  className={`${service.iconBg} w-20 h-20 rounded-2xl flex items-center justify-center mx-auto`}
+                  whileHover={{ rotate: 5, scale: 1.1 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {service.icon}
+                </motion.div>
+
+                {/* Content */}
+                <div className="space-y-4">
+                  <motion.h3
+                    className="text-xl lg:text-2xl font-bold text-theme-primary"
+                    whileHover={{ scale: 1.01 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    {service.title}
+                  </motion.h3>
+
+                  <p className="text-theme-muted leading-relaxed">{service.description}</p>
+
+                  {/* Features */}
+                  <div className="space-y-2">
+                    {service.features.map((feature, featureIndex) => (
+                      <motion.div
+                        key={feature}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: featureIndex * 0.1 }}
+                        className="flex items-center justify-center space-x-2 text-sm text-theme-muted"
+                      >
+                        <svg
+                          className="w-4 h-4 text-theme-secondary"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                        <span>{feature}</span>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Learn More Button */}
+                <motion.button
+                  whileHover={{ scale: 1.01 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="w-full btn-theme-primary py-3 rounded-xl font-medium text-sm shadow-md hover:shadow-lg transition-shadow"
+                >
+                  Learn More
+                </motion.button>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
 };
 

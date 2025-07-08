@@ -5,6 +5,234 @@
 @tailwind components;
 @tailwind utilities;
 
+/* GIV Society Theme CSS Variables */
+:root {
+  /* Brand Colors - Light Mode (Default) */
+  --color-primary: #2563eb;
+  --color-secondary: #10b981;
+  --color-accent: #f97316;
+  --color-danger: #ef4444;
+  --color-warning: #facc15;
+  --color-info: #3b82f6;
+  --color-success: #10b981;
+
+  /* Base Colors - Light Mode */
+  --color-background: #ffffff;
+  --color-surface: #f8fafc;
+  --color-border: #e5e7eb;
+  --color-text-primary: #111827;
+  --color-text-muted: #6b7280;
+
+  /* Component Colors - Light Mode */
+  --color-navbar-bg: #ffffff;
+  --color-navbar-text: #111827;
+  --color-navbar-hover: #2563eb;
+
+  --color-hero-bg: #f8fafc;
+  --color-hero-headline: #111827;
+  --color-hero-subtext: #6b7280;
+
+  --color-card-bg: #ffffff;
+  --color-card-title: #111827;
+  --color-card-meta: #6b7280;
+  --color-card-border: #e5e7eb;
+
+  --color-stats-bg: #f8fafc;
+  --color-stats-numbers: #2563eb;
+  --color-stats-labels: #6b7280;
+
+  --color-btn-primary-bg: #2563eb;
+  --color-btn-primary-hover: #1d4ed8;
+  --color-btn-secondary-bg: #10b981;
+  --color-btn-secondary-hover: #059669;
+}
+
+/* Dark Mode Variables */
+.dark {
+  /* Brand Colors - Dark Mode */
+  --color-primary: #3b82f6;
+  --color-secondary: #22c55e;
+  --color-accent: #fb923c;
+  --color-danger: #f87171;
+  --color-warning: #fde047;
+  --color-info: #60a5fa;
+  --color-success: #34d399;
+
+  /* Base Colors - Dark Mode */
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-border: #334155;
+  --color-text-primary: #f1f5f9;
+  --color-text-muted: #94a3b8;
+
+  /* Component Colors - Dark Mode */
+  --color-navbar-bg: #1e293b;
+  --color-navbar-text: #f1f5f9;
+  --color-navbar-hover: #3b82f6;
+
+  --color-hero-bg: #1e293b;
+  --color-hero-headline: #f1f5f9;
+  --color-hero-subtext: #94a3b8;
+
+  --color-card-bg: #1e293b;
+  --color-card-title: #f8fafc;
+  --color-card-meta: #94a3b8;
+  --color-card-border: #334155;
+
+  --color-stats-bg: #0f172a;
+  --color-stats-numbers: #60a5fa;
+  --color-stats-labels: #94a3b8;
+
+  --color-btn-primary-bg: #3b82f6;
+  --color-btn-primary-hover: #60a5fa;
+  --color-btn-secondary-bg: #22c55e;
+  --color-btn-secondary-hover: #16a34a;
+}
+
+/* Theme-aware utility classes */
+@layer utilities {
+  /* Background utilities */
+  .bg-theme-background {
+    background-color: var(--color-background);
+  }
+
+  .bg-theme-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-theme-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-theme-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  /* Text utilities */
+  .text-theme-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-theme-muted {
+    color: var(--color-text-muted);
+  }
+
+  .text-theme-brand-primary {
+    color: var(--color-primary);
+  }
+
+  /* Border utilities */
+  .border-theme {
+    border-color: var(--color-border);
+  }
+
+  /* Button utilities */
+  .btn-theme-primary {
+    background-color: var(--color-btn-primary-bg);
+    color: white;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-theme-primary:hover {
+    background-color: var(--color-btn-primary-hover);
+  }
+
+  .btn-theme-secondary {
+    background-color: var(--color-btn-secondary-bg);
+    color: white;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-theme-secondary:hover {
+    background-color: var(--color-btn-secondary-hover);
+  }
+}
+
+/* Theme-aware utility classes */
+@layer utilities {
+  /* Background utilities */
+  .bg-theme-background {
+    background-color: var(--color-background);
+  }
+
+  .bg-theme-surface {
+    background-color: var(--color-surface);
+  }
+
+  .bg-theme-primary {
+    background-color: var(--color-primary);
+  }
+
+  .bg-theme-secondary {
+    background-color: var(--color-secondary);
+  }
+
+  .bg-theme-accent {
+    background-color: var(--color-accent);
+  }
+
+  /* Text utilities */
+  .text-theme-primary {
+    color: var(--color-text-primary);
+  }
+
+  .text-theme-muted {
+    color: var(--color-text-muted);
+  }
+
+  .text-theme-brand-primary {
+    color: var(--color-primary);
+  }
+
+  .text-theme-brand-secondary {
+    color: var(--color-secondary);
+  }
+
+  /* Border utilities */
+  .border-theme {
+    border-color: var(--color-border);
+  }
+
+  .border-theme-primary {
+    border-color: var(--color-primary);
+  }
+
+  /* Button utilities */
+  .btn-theme-primary {
+    background-color: var(--color-btn-primary-bg);
+    color: white;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-theme-primary:hover {
+    background-color: var(--color-btn-primary-hover);
+  }
+
+  .btn-theme-secondary {
+    background-color: var(--color-btn-secondary-bg);
+    color: white;
+    transition: background-color 0.2s ease;
+  }
+
+  .btn-theme-secondary:hover {
+    background-color: var(--color-btn-secondary-hover);
+  }
+
+  /* Card utilities */
+  .card-theme {
+    background-color: var(--color-card-bg);
+    border-color: var(--color-card-border);
+  }
+
+  .card-theme-title {
+    color: var(--color-card-title);
+  }
+
+  .card-theme-meta {
+    color: var(--color-card-meta);
+  }
+}
+
 /* Custom scrollbar styles for smooth carousel */
 .scrollbar-hide {
   -ms-overflow-style: none; /* Internet Explorer 10+ */

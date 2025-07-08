@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class', // Enable class-based dark mode for GIV Society theme system
   theme: {
     extend: {
       colors: {
@@ -59,6 +60,42 @@ export default {
           900: '#7f1d1d',
           950: '#450a0a',
         },
+        // GIV Society theme-aware colors using CSS variables
+        'giv-primary': {
+          light: '#2563EB',
+          dark: '#3B82F6',
+          DEFAULT: '#2563EB',
+        },
+        'giv-secondary': {
+          light: '#10B981',
+          dark: '#22C55E',
+          DEFAULT: '#10B981',
+        },
+        'giv-accent': {
+          light: '#F97316',
+          dark: '#FB923C',
+          DEFAULT: '#F97316',
+        },
+      },
+      // Theme-aware background colors
+      backgroundColor: {
+        'theme-background': 'var(--color-background)',
+        'theme-surface': 'var(--color-surface)',
+        'theme-primary': 'var(--color-primary)',
+        'theme-secondary': 'var(--color-secondary)',
+        'theme-accent': 'var(--color-accent)',
+      },
+      // Theme-aware text colors
+      textColor: {
+        'theme-primary': 'var(--color-text-primary)',
+        'theme-muted': 'var(--color-text-muted)',
+        'theme-brand-primary': 'var(--color-primary)',
+        'theme-brand-secondary': 'var(--color-secondary)',
+      },
+      // Theme-aware border colors
+      borderColor: {
+        'theme': 'var(--color-border)',
+        'theme-primary': 'var(--color-primary)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
