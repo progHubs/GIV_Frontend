@@ -155,13 +155,16 @@ export const authService = {
 
   /**
    * Request password reset
-   * POST /auth/forgot-password
+   * POST /auth/request-password-reset
    */
   forgotPassword: async (emailData: ForgotPasswordRequest) => {
     const response = await api.post<{
       success: boolean;
       message: string;
-    }>('/auth/forgot-password', emailData);
+      email_sent?: boolean;
+      expires_in?: number;
+      resetToken?: string; // Only in development
+    }>('/auth/request-password-reset', emailData);
 
     return response;
   },
@@ -174,6 +177,16 @@ export const authService = {
     const response = await api.post<{
       success: boolean;
       message: string;
+      password_strength?: {
+        score: number;
+        level: string;
+      };
+      security_actions?: {
+        all_sessions_terminated: boolean;
+        all_tokens_revoked: boolean;
+        notification_sent: boolean;
+        security_log_created: boolean;
+      };
     }>('/auth/reset-password', resetData);
 
     return response;

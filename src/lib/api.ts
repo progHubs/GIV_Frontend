@@ -90,7 +90,18 @@ apiClient.interceptors.response.use(
     }
 
     // Handle 401 Unauthorized - Token expired or invalid
-    if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
+    // Don't retry for login, register, or refresh endpoints
+    const isAuthEndpoint =
+      originalRequest?.url?.includes('/auth/login') ||
+      originalRequest?.url?.includes('/auth/register') ||
+      originalRequest?.url?.includes('/auth/refresh');
+
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthEndpoint
+    ) {
       // If we're already refreshing, queue this request
       if (isRefreshing) {
         return new Promise((resolve, reject) => {

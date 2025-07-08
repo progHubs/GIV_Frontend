@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -14,18 +14,23 @@ const RegisterForm: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
     watch,
-    setError
+    setError,
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       language_preference: 'en',
-      acceptTerms: false
-    }
+      acceptTerms: false,
+    },
   });
 
   // Watch password for strength indicator
@@ -34,12 +39,12 @@ const RegisterForm: React.FC = () => {
   const onSubmit = async (data: RegisterFormData) => {
     try {
       clearError();
-      
+
       // Remove confirmPassword and acceptTerms from the data sent to backend
       const { confirmPassword, acceptTerms, ...registrationData } = data;
-      
+
       await registerUser(registrationData);
-      
+
       // Registration successful - redirect or show success message
       navigate('/dashboard');
     } catch (error: any) {
@@ -47,7 +52,8 @@ const RegisterForm: React.FC = () => {
       if (error.code === 'DUPLICATE_EMAIL') {
         setError('email', {
           type: 'manual',
-          message: 'This email is already registered. Please use a different email or try logging in.'
+          message:
+            'This email is already registered. Please use a different email or try logging in.',
         });
       } else if (error.code === 'VALIDATION_ERROR' && error.details) {
         // Map backend validation errors to form fields
@@ -55,7 +61,7 @@ const RegisterForm: React.FC = () => {
           if (Array.isArray(messages) && messages.length > 0) {
             setError(field as keyof RegisterFormData, {
               type: 'manual',
-              message: messages[0]
+              message: messages[0],
             });
           }
         });
@@ -64,24 +70,26 @@ const RegisterForm: React.FC = () => {
     }
   };
 
-  const getPasswordStrength = (password: string): { score: number; label: string; color: string } => {
+  const getPasswordStrength = (
+    password: string
+  ): { score: number; label: string; color: string } => {
     if (!password) return { score: 0, label: '', color: '' };
-    
+
     let score = 0;
-    
+
     // Length
     if (password.length >= 8) score += 20;
     if (password.length >= 12) score += 10;
-    
+
     // Character types
     if (/[a-z]/.test(password)) score += 15;
     if (/[A-Z]/.test(password)) score += 15;
     if (/\d/.test(password)) score += 15;
     if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) score += 15;
-    
+
     // Complexity
     if (password.length >= 16) score += 10;
-    
+
     if (score < 30) return { score, label: 'Weak', color: 'bg-red-500' };
     if (score < 60) return { score, label: 'Fair', color: 'bg-yellow-500' };
     if (score < 80) return { score, label: 'Good', color: 'bg-blue-500' };
@@ -100,9 +108,7 @@ const RegisterForm: React.FC = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             {t('auth.register.title')}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {t('auth.register.subtitle')}
-          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">{t('auth.register.subtitle')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -147,9 +153,7 @@ const RegisterForm: React.FC = () => {
                 } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder={t('auth.register.email')}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             {/* Phone (Optional) */}
@@ -166,14 +170,15 @@ const RegisterForm: React.FC = () => {
                 } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder="+1234567890"
               />
-              {errors.phone && (
-                <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>
-              )}
+              {errors.phone && <p className="mt-1 text-sm text-red-600">{errors.phone.message}</p>}
             </div>
 
             {/* Language Preference */}
             <div>
-              <label htmlFor="language_preference" className="block text-sm font-medium text-gray-700">
+              <label
+                htmlFor="language_preference"
+                className="block text-sm font-medium text-gray-700"
+              >
                 {t('auth.register.language')}
               </label>
               <select
@@ -210,12 +215,10 @@ const RegisterForm: React.FC = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <span className="text-gray-400 text-sm">
-                    {showPassword ? 'Hide' : 'Show'}
-                  </span>
+                  <span className="text-gray-400 text-sm">{showPassword ? 'Hide' : 'Show'}</span>
                 </button>
               </div>
-              
+
               {/* Password Strength Indicator */}
               {password && (
                 <div className="mt-2">
@@ -230,7 +233,7 @@ const RegisterForm: React.FC = () => {
                   </div>
                 </div>
               )}
-              
+
               {errors.password && (
                 <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
               )}
@@ -308,10 +311,7 @@ const RegisterForm: React.FC = () => {
           <div className="text-center">
             <span className="text-sm text-gray-600">
               {t('auth.register.hasAccount')}{' '}
-              <Link
-                to="/login"
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
+              <Link to="/login" className="font-medium text-blue-600 hover:text-blue-500">
                 {t('auth.register.signIn')}
               </Link>
             </span>

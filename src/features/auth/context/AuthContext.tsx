@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../../../lib/auth';
 import { clearTokens } from '../../../lib/api';
@@ -21,6 +21,7 @@ type AuthAction =
   | { type: 'AUTH_ERROR'; payload: string }
   | { type: 'AUTH_LOGOUT' }
   | { type: 'CLEAR_ERROR' }
+  | { type: 'CLEAR_LOADING' }
   | { type: 'UPDATE_USER'; payload: User }
   | { type: 'INITIAL_CHECK_START' }
   | { type: 'INITIAL_CHECK_COMPLETE' };
@@ -92,6 +93,12 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         ...state,
         error: null,
       };
+    case 'CLEAR_LOADING':
+      return {
+        ...state,
+        isLoading: false,
+        error: null,
+      };
     default:
       return state;
   }
@@ -143,7 +150,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const login = async (credentials: LoginRequest) => {
+  const login = useCallback(async (credentials: LoginRequest) => {
     try {
       dispatch({ type: 'AUTH_START' });
       const response = await authService.login(credentials);
@@ -159,9 +166,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const register = async (userData: RegisterRequest) => {
+  const register = useCallback(async (userData: RegisterRequest) => {
     try {
       dispatch({ type: 'AUTH_START' });
       const response = await authService.register(userData);
@@ -181,9 +188,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const logout = async () => {
+  const logout = useCallback(async () => {
     try {
       await authService.logout();
       // Tokens are already cleared in authService.logout
@@ -194,7 +201,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       dispatch({ type: 'AUTH_LOGOUT' });
     }
-  };
+  }, []);
 
   const updateProfile = async (profileData: UpdateProfileRequest) => {
     try {
@@ -226,33 +233,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const forgotPassword = async (emailData: ForgotPasswordRequest) => {
+  const forgotPassword = useCallback(async (emailData: ForgotPasswordRequest) => {
     try {
+      dispatch({ type: 'AUTH_START' });
       const response = await authService.forgotPassword(emailData);
 
-      if (!response.success) {
+      if (response.success) {
+        // Reset password request successful - clear loading state
+        dispatch({ type: 'CLEAR_LOADING' });
+      } else {
         throw new Error('Password reset request failed');
       }
     } catch (error: any) {
-      const errorMessage = error.message || 'Password reset request failed';
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Password reset request failed';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
-  const resetPassword = async (resetData: ResetPasswordRequest) => {
+  const resetPassword = useCallback(async (resetData: ResetPasswordRequest) => {
     try {
+      dispatch({ type: 'AUTH_START' });
       const response = await authService.resetPassword(resetData);
 
-      if (!response.success) {
+      if (response.success) {
+        // Password reset successful - clear loading state
+        dispatch({ type: 'CLEAR_LOADING' });
+      } else {
         throw new Error('Password reset failed');
       }
     } catch (error: any) {
-      const errorMessage = error.message || 'Password reset failed';
+      const errorMessage =
+        error.response?.data?.message || error.message || 'Password reset failed';
       dispatch({ type: 'AUTH_ERROR', payload: errorMessage });
       throw error;
     }
-  };
+  }, []);
 
   const refreshToken = async () => {
     try {
@@ -263,9 +280,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const clearError = () => {
+  const clearError = useCallback(() => {
     dispatch({ type: 'CLEAR_ERROR' });
-  };
+  }, []);
 
   const value: AuthContextType = {
     ...state,

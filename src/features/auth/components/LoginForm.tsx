@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslation } from 'react-i18next';
@@ -17,20 +17,25 @@ const LoginForm: React.FC = () => {
   // Get the intended destination from location state
   const from = (location.state as any)?.from?.pathname || '/dashboard';
 
+  // Clear any existing errors when component mounts
+  useEffect(() => {
+    clearError();
+  }, [clearError]);
+
   const {
     register,
     handleSubmit,
     formState: { errors, isSubmitting },
-    setError
+    setError,
   } = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema)
+    resolver: zodResolver(loginSchema),
   });
 
   const onSubmit = async (data: LoginFormData) => {
     try {
       clearError();
       await login(data);
-      
+
       // Login successful - redirect to intended destination
       navigate(from, { replace: true });
     } catch (error: any) {
@@ -38,27 +43,27 @@ const LoginForm: React.FC = () => {
       if (error.code === 'INVALID_CREDENTIALS') {
         setError('email', {
           type: 'manual',
-          message: 'Invalid email or password'
+          message: 'Invalid email or password',
         });
         setError('password', {
           type: 'manual',
-          message: 'Invalid email or password'
+          message: 'Invalid email or password',
         });
       } else if (error.code === 'ACCOUNT_LOCKED') {
         // Show account locked message with unlock time if available
-        const unlockTime = error.details?.lockoutUntil 
+        const unlockTime = error.details?.lockoutUntil
           ? new Date(error.details.lockoutUntil).toLocaleTimeString()
           : '';
         setError('email', {
           type: 'manual',
-          message: unlockTime 
-            ? `Account locked until ${unlockTime}` 
-            : 'Account temporarily locked due to multiple failed attempts'
+          message: unlockTime
+            ? `Account locked until ${unlockTime}`
+            : 'Account temporarily locked due to multiple failed attempts',
         });
       } else if (error.code === 'EMAIL_NOT_VERIFIED') {
         setError('email', {
           type: 'manual',
-          message: 'Please verify your email address before logging in'
+          message: 'Please verify your email address before logging in',
         });
       } else if (error.code === 'VALIDATION_ERROR' && error.details) {
         // Map backend validation errors to form fields
@@ -66,7 +71,7 @@ const LoginForm: React.FC = () => {
           if (Array.isArray(messages) && messages.length > 0) {
             setError(field as keyof LoginFormData, {
               type: 'manual',
-              message: messages[0]
+              message: messages[0],
             });
           }
         });
@@ -85,9 +90,7 @@ const LoginForm: React.FC = () => {
           <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
             {t('auth.login.title')}
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {t('auth.login.subtitle')}
-          </p>
+          <p className="mt-2 text-center text-sm text-gray-600">{t('auth.login.subtitle')}</p>
         </div>
 
         <form className="mt-8 space-y-6" onSubmit={handleSubmit(onSubmit)}>
@@ -113,9 +116,7 @@ const LoginForm: React.FC = () => {
                 } placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm`}
                 placeholder={t('auth.login.email')}
               />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
-              )}
+              {errors.email && <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>}
             </div>
 
             {/* Password */}
@@ -138,9 +139,7 @@ const LoginForm: React.FC = () => {
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  <span className="text-gray-400 text-sm">
-                    {showPassword ? 'Hide' : 'Show'}
-                  </span>
+                  <span className="text-gray-400 text-sm">{showPassword ? 'Hide' : 'Show'}</span>
                 </button>
               </div>
               {errors.password && (
@@ -164,10 +163,7 @@ const LoginForm: React.FC = () => {
             </div>
 
             <div className="text-sm">
-              <Link
-                to="/forgot-password"
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
+              <Link to="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
                 {t('auth.login.forgot')}
               </Link>
             </div>
@@ -195,10 +191,7 @@ const LoginForm: React.FC = () => {
           <div className="text-center">
             <span className="text-sm text-gray-600">
               {t('auth.login.noAccount')}{' '}
-              <Link
-                to="/register"
-                className="font-medium text-blue-600 hover:text-blue-500"
-              >
+              <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
                 {t('auth.login.signUp')}
               </Link>
             </span>

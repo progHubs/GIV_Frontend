@@ -83,8 +83,8 @@ export interface ForgotPasswordRequest {
 
 export interface ResetPasswordRequest {
   token: string;
-  password: string;
-  confirmPassword: string;
+  new_password: string;
+  confirm_password: string;
 }
 
 // Profile Update Types

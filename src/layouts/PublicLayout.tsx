@@ -41,9 +41,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">G</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
-                  {t('app.name')}
-                </span>
+                <span className="text-xl font-bold text-gray-900">{t('app.name')}</span>
               </Link>
             </div>
 
@@ -52,9 +50,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               <Link
                 to="/"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.home')}
@@ -62,9 +58,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               <Link
                 to="/campaigns"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/campaigns') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/campaigns') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.campaigns')}
@@ -72,29 +66,23 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               <Link
                 to="/events"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/events') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/events') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.events')}
               </Link>
               <Link
-                to="/blog"
+                to="/posts"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/blog') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/posts') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
-                {t('navigation.blog')}
+                {t('navigation.posts')}
               </Link>
               <Link
                 to="/about"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/about') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/about') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.about')}
@@ -149,9 +137,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
       </header>
 
       {/* Main content */}
-      <main className="flex-1">
-        {children}
-      </main>
+      <main className="flex-1">{children}</main>
 
       {/* Footer */}
       <footer className="bg-gray-900 text-white">
@@ -164,16 +150,17 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 </div>
                 <span className="text-xl font-bold">{t('app.name')}</span>
               </div>
-              <p className="text-gray-400 mb-4">
-                {t('app.tagline')}
-              </p>
+              <p className="text-gray-400 mb-4">{t('app.tagline')}</p>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">{t('navigation.home')}</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/campaigns" className="text-gray-400 hover:text-white transition-colors">
+                  <Link
+                    to="/campaigns"
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
                     {t('navigation.campaigns')}
                   </Link>
                 </li>
@@ -189,7 +176,7 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
                 </li>
               </ul>
             </div>
-            
+
             <div>
               <h3 className="text-lg font-semibold mb-4">{t('navigation.contact')}</h3>
               <ul className="space-y-2">
@@ -206,11 +193,9 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
               </ul>
             </div>
           </div>
-          
+
           <div className="border-t border-gray-800 mt-8 pt-8 text-center">
-            <p className="text-gray-400">
-              © 2024 {t('app.name')}. All rights reserved.
-            </p>
+            <p className="text-gray-400">© 2024 {t('app.name')}. All rights reserved.</p>
           </div>
         </div>
       </footer>
