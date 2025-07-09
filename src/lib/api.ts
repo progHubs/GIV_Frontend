@@ -6,20 +6,38 @@ import type { ApiError } from '../types/api';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1';
 const API_TIMEOUT = 50000; // 50 seconds
 
-// Token storage
-let accessToken: string | null = null;
+// Token storage keys
+const ACCESS_TOKEN_KEY = 'giv_access_token';
+const REFRESH_TOKEN_KEY = 'giv_refresh_token';
 
 // Token management functions
 export const setAccessToken = (token: string | null) => {
-  accessToken = token;
+  if (token) {
+    localStorage.setItem(ACCESS_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(ACCESS_TOKEN_KEY);
+  }
 };
 
-export const getAccessToken = () => {
-  return accessToken;
+export const getAccessToken = (): string | null => {
+  return localStorage.getItem(ACCESS_TOKEN_KEY);
+};
+
+export const setRefreshToken = (token: string | null) => {
+  if (token) {
+    localStorage.setItem(REFRESH_TOKEN_KEY, token);
+  } else {
+    localStorage.removeItem(REFRESH_TOKEN_KEY);
+  }
+};
+
+export const getRefreshToken = (): string | null => {
+  return localStorage.getItem(REFRESH_TOKEN_KEY);
 };
 
 export const clearTokens = () => {
-  accessToken = null;
+  localStorage.removeItem(ACCESS_TOKEN_KEY);
+  localStorage.removeItem(REFRESH_TOKEN_KEY);
 };
 
 // Create Axios instance
@@ -56,9 +74,10 @@ const processQueue = (error: any, token: string | null = null) => {
 apiClient.interceptors.request.use(
   config => {
     // Add Authorization header if access token is available
-    if (accessToken) {
+    const token = getAccessToken();
+    if (token) {
       config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${accessToken}`;
+      config.headers.Authorization = `Bearer ${token}`;
     }
 
     return config;
@@ -119,10 +138,22 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Attempt to refresh token using the backend's refresh endpoint
-        const refreshResponse = await apiClient.post('/auth/refresh');
+        // Get refresh token from storage
+        const refreshToken = getRefreshToken();
+        if (!refreshToken) {
+          throw new Error('No refresh token available');
+        }
 
-        if (refreshResponse.data.success) {
+        // Attempt to refresh token using the backend's refresh endpoint
+        const refreshResponse = await apiClient.post('/auth/refresh', {
+          refreshToken: refreshToken,
+        });
+
+        if (refreshResponse.data.success && refreshResponse.data.tokens) {
+          // Store new tokens
+          setAccessToken(refreshResponse.data.tokens.accessToken);
+          setRefreshToken(refreshResponse.data.tokens.refreshToken);
+
           // Process queued requests
           processQueue(null, 'refreshed');
 
@@ -134,6 +165,7 @@ apiClient.interceptors.response.use(
       } catch (refreshError) {
         // Refresh failed, clear auth state and redirect
         processQueue(refreshError, null);
+        clearTokens();
 
         console.error('❌ Token refresh failed:', refreshError);
 

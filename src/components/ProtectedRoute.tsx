@@ -21,19 +21,25 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
     );
   }
 
-  // Check if authentication is required
+  // If authentication is not required, render children
+  if (!requireAuth) {
+    return <>{children}</>;
+  }
+
+  // Check if authentication is required but user is not authenticated
   if (requireAuth && !isAuthenticated) {
     // Redirect to login with return URL
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
   }
 
-  // Check role-based access
-  if (requiredRole && user?.role !== requiredRole) {
-    // Redirect to unauthorized page or dashboard
+  // At this point, user is authenticated
+  // Check role-based access if a specific role is required
+  if (requiredRole && (!user || user.role !== requiredRole)) {
+    // Redirect to unauthorized page
     return <Navigate to="/unauthorized" replace />;
   }
 
-  // Render the protected component
+  // User is authenticated and has the required role (if any)
   return <>{children}</>;
 };
 

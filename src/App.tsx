@@ -12,30 +12,26 @@ import { AuthProvider } from './features/auth/context/AuthContext';
 import queryClient from './lib/queryClient';
 import './lib/i18n'; // Initialize i18n
 
-// Layouts
-import PublicLayout from './layouts/PublicLayout';
-
 // Components
 import ProtectedRoute from './components/ProtectedRoute';
+import RouteChangeLoader from './components/common/RouteChangeLoader';
 
 // Auth Pages
-import RegisterPage from './features/auth/pages/RegisterPage';
 import LoginPage from './features/auth/pages/LoginPage';
+import RegisterPage from './features/auth/pages/RegisterPage';
 import ForgotPasswordPage from './features/auth/pages/ForgotPasswordPage';
 import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 
 // Public Pages
 import HomePage from './pages/HomePage';
-import CampaignsPage from './pages/CampaignsPage';
-import EventsPage from './pages/EventsPage';
-import PostsPage from './pages/PostsPage';
+import NotFoundPage from './pages/NotFoundPage';
+import UnauthorizedPage from './pages/UnauthorizedPage';
 
 // User Pages
-import DashboardPage from './pages/user/DashboardPage';
-import ProfilePage from './pages/user/ProfilePage';
+import UserProfile from './pages/profile/UserProfile';
 
 // Admin Pages
-import AdminDashboardPage from './pages/admin/AdminDashboardPage';
+import AdminDashboard from './pages/admin/AdminDashboard';
 
 // Component to handle legacy reset password URLs with query parameters
 const ResetPasswordRedirect = () => {
@@ -54,37 +50,19 @@ const ResetPasswordRedirect = () => {
   return <div>Redirecting...</div>;
 };
 
-const UnauthorizedPage = () => (
-  <PublicLayout>
-    <div className="max-w-md mx-auto px-4 py-12 text-center">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Unauthorized</h1>
-      <p className="text-gray-600">You don't have permission to access this page.</p>
-    </div>
-  </PublicLayout>
-);
-
-const NotFoundPage = () => (
-  <PublicLayout>
-    <div className="max-w-md mx-auto px-4 py-12 text-center">
-      <h1 className="text-2xl font-bold text-gray-900 mb-4">Page Not Found</h1>
-      <p className="text-gray-600">The page you're looking for doesn't exist.</p>
-    </div>
-  </PublicLayout>
-);
-
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <Router>
+          <RouteChangeLoader />
           <Routes>
             {/* Public routes - No authentication required */}
             <Route path="/" element={<HomePage />} />
-            <Route path="/campaigns" element={<CampaignsPage />} />
-            <Route path="/events" element={<EventsPage />} />
-            <Route path="/posts" element={<PostsPage />} />
 
             {/* Auth routes */}
+            <Route path="/auth/login" element={<LoginPage />} />
+            <Route path="/auth/register" element={<RegisterPage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -94,31 +72,26 @@ function App() {
 
             {/* Protected routes - Authentication required */}
             <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/profile"
               element={
                 <ProtectedRoute>
-                  <ProfilePage />
+                  <UserProfile />
                 </ProtectedRoute>
               }
             />
 
             {/* Admin routes - Admin role required */}
             <Route
-              path="/admin"
+              path="/admin/dashboard"
               element={
                 <ProtectedRoute requiredRole="admin">
-                  <AdminDashboardPage />
+                  <AdminDashboard />
                 </ProtectedRoute>
               }
             />
+
+            {/* Error pages */}
+            <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
             {/* Catch all route */}
             <Route path="*" element={<NotFoundPage />} />

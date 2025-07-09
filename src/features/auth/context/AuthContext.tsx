@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../../../lib/auth';
-import { clearTokens } from '../../../lib/api';
+import { clearTokens, getAccessToken } from '../../../lib/api';
 import type {
   User,
   AuthState,
@@ -133,16 +133,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkAuthStatus = async () => {
     try {
       dispatch({ type: 'INITIAL_CHECK_START' });
+
+      // Check if we have a stored access token
+      const storedToken = getAccessToken();
+      if (!storedToken) {
+        dispatch({ type: 'AUTH_LOGOUT' });
+        return;
+      }
+
+      // Verify the token by getting current user
       const response = await authService.getCurrentUser();
 
       if (response.success && response.user) {
-        // Access token is already stored in authService.getCurrentUser if provided
+        // Token is valid, set user state
         dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
       } else {
+        // Token is invalid, clear everything
         clearTokens();
         dispatch({ type: 'AUTH_LOGOUT' });
       }
     } catch (error) {
+      // Error occurred, clear everything
       clearTokens();
       dispatch({ type: 'AUTH_LOGOUT' });
     } finally {
@@ -156,7 +167,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authService.login(credentials);
 
       if (response.success && response.user) {
-        // Access token is already stored in authService.login
+        // Tokens are already stored in authService.login
         dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
       } else {
         throw new Error('Login failed');
@@ -176,6 +187,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.success) {
         // If email verification is required, user won't be logged in immediately
         if (response.user && response.tokens) {
+          // Tokens are already stored in authService.register
           dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
         } else {
           dispatch({ type: 'AUTH_LOGOUT' });

@@ -1,4 +1,4 @@
-import { api, setAccessToken, clearTokens } from './api';
+import { api, setAccessToken, setRefreshToken, clearTokens } from './api';
 import type {
   User,
   LoginRequest,
@@ -28,9 +28,10 @@ export const authService = {
       verificationToken?: string;
     }>('/auth/register', userData);
 
-    // Store access token for subsequent requests if provided
+    // Store tokens for subsequent requests if provided
     if (response.success && response.tokens?.accessToken) {
       setAccessToken(response.tokens.accessToken);
+      setRefreshToken(response.tokens.refreshToken);
     }
 
     return response;
@@ -53,9 +54,10 @@ export const authService = {
       sessionId: string;
     }>('/auth/login', credentials);
 
-    // Store access token for subsequent requests
+    // Store tokens for subsequent requests
     if (response.success && response.tokens?.accessToken) {
       setAccessToken(response.tokens.accessToken);
+      setRefreshToken(response.tokens.refreshToken);
     }
 
     return response;
@@ -95,9 +97,10 @@ export const authService = {
       sessionId: string;
     }>('/auth/refresh');
 
-    // Store new access token
+    // Store new tokens
     if (response.success && response.tokens?.accessToken) {
       setAccessToken(response.tokens.accessToken);
+      setRefreshToken(response.tokens.refreshToken);
     }
 
     return response;
@@ -118,9 +121,10 @@ export const authService = {
       };
     }>('/auth/me');
 
-    // Store access token if provided (e.g., after token refresh)
+    // Store tokens if provided (e.g., after token refresh)
     if (response.success && response.tokens?.accessToken) {
       setAccessToken(response.tokens.accessToken);
+      setRefreshToken(response.tokens.refreshToken);
     }
 
     return response;

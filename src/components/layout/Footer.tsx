@@ -4,27 +4,8 @@
  */
 
 import React from 'react';
-import { motion } from 'framer-motion';
 
 const Footer: React.FC = () => {
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-    },
-  };
-
   const footerLinks = {
     about: [
       { name: 'Our Mission', href: '/about' },
@@ -103,17 +84,11 @@ const Footer: React.FC = () => {
   return (
     <footer className="bg-theme-background border-t border-theme">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: '-100px' }}
-          className="py-16 lg:py-20"
-        >
+        <div className="py-16 lg:py-20">
           {/* Main Footer Content */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-8 lg:gap-12">
             {/* Brand Section */}
-            <motion.div variants={itemVariants} className="lg:col-span-2 space-y-6">
+            <div className="lg:col-span-2 space-y-6">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-theme-primary rounded-xl flex items-center justify-center">
                   <svg className="w-7 h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
@@ -134,99 +109,90 @@ const Footer: React.FC = () => {
               {/* Social Links */}
               <div className="flex space-x-4">
                 {socialLinks.map(social => (
-                  <motion.a
+                  <a
                     key={social.name}
                     href={social.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    whileHover={{ scale: 1.1, y: -2 }}
-                    whileTap={{ scale: 0.9 }}
                     className="w-10 h-10 bg-theme-surface rounded-lg flex items-center justify-center text-theme-muted hover:text-theme-primary hover:bg-theme-primary hover:text-white transition-all duration-300 border border-theme"
                   >
                     {social.icon}
-                  </motion.a>
+                  </a>
                 ))}
               </div>
-            </motion.div>
+            </div>
 
             {/* About Links */}
-            <motion.div variants={itemVariants} className="space-y-4">
+            <div className="space-y-4">
               <h4 className="font-semibold text-theme-primary">About</h4>
               <ul className="space-y-3">
                 {footerLinks.about.map(link => (
                   <li key={link.name}>
-                    <motion.a
+                    <a
                       href={link.href}
-                      whileHover={{ x: 4 }}
                       className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                     >
                       {link.name}
-                    </motion.a>
+                    </a>
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
 
             {/* Programs Links */}
-            <motion.div variants={itemVariants} className="space-y-4">
+            <div className="space-y-4">
               <h4 className="font-semibold text-theme-primary">Programs</h4>
               <ul className="space-y-3">
                 {footerLinks.programs.map(link => (
                   <li key={link.name}>
-                    <motion.a
+                    <a
                       href={link.href}
-                      whileHover={{ x: 4 }}
                       className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                     >
                       {link.name}
-                    </motion.a>
+                    </a>
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
 
             {/* Get Involved Links */}
-            <motion.div variants={itemVariants} className="space-y-4">
+            <div className="space-y-4">
               <h4 className="font-semibold text-theme-primary">Get Involved</h4>
               <ul className="space-y-3">
                 {footerLinks.getInvolved.map(link => (
                   <li key={link.name}>
-                    <motion.a
+                    <a
                       href={link.href}
-                      whileHover={{ x: 4 }}
                       className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                     >
                       {link.name}
-                    </motion.a>
+                    </a>
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
 
             {/* Resources Links */}
-            <motion.div variants={itemVariants} className="space-y-4">
+            <div className="space-y-4">
               <h4 className="font-semibold text-theme-primary">Resources</h4>
               <ul className="space-y-3">
                 {footerLinks.resources.map(link => (
                   <li key={link.name}>
-                    <motion.a
+                    <a
                       href={link.href}
-                      whileHover={{ x: 4 }}
                       className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                     >
                       {link.name}
-                    </motion.a>
+                    </a>
                   </li>
                 ))}
               </ul>
-            </motion.div>
+            </div>
           </div>
 
           {/* Contact Info */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-12 pt-8 border-t border-theme grid md:grid-cols-3 gap-6"
-          >
+          <div className="mt-12 pt-8 border-t border-theme grid md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <h5 className="font-semibold text-theme-primary">Email</h5>
               <p className="text-theme-muted">info@givsociety.org</p>
@@ -239,61 +205,53 @@ const Footer: React.FC = () => {
               <h5 className="font-semibold text-theme-primary">Address</h5>
               <p className="text-theme-muted">Addis Ababa, Ethiopia</p>
             </div>
-          </motion.div>
+          </div>
 
           {/* Bottom Bar */}
-          <motion.div
-            variants={itemVariants}
-            className="mt-12 pt-8 border-t border-theme flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0"
-          >
+          <div className="mt-12 pt-8 border-t border-theme flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6">
               <p className="text-theme-muted text-sm">
-                © 2024 GIV Society Ethiopia. All rights reserved.
+                © {new Date().getFullYear()} GIV Society Ethiopia. All rights reserved.
               </p>
               <div className="flex space-x-6 text-sm">
-                <motion.a
+                <a
                   href="/privacy"
-                  whileHover={{ y: -1 }}
                   className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                 >
                   Privacy Policy
-                </motion.a>
-                <motion.a
+                </a>
+                <a
                   href="/terms"
-                  whileHover={{ y: -1 }}
                   className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                 >
                   Terms of Service
-                </motion.a>
-                <motion.a
+                </a>
+                <a
                   href="/cookies"
-                  whileHover={{ y: -1 }}
                   className="text-theme-muted hover:text-theme-primary transition-colors duration-200"
                 >
                   Cookie Policy
-                </motion.a>
+                </a>
               </div>
             </div>
 
             <div className="flex items-center space-x-2 text-sm text-theme-muted">
               <span>Made with</span>
-              <motion.svg
+              <svg
                 className="w-4 h-4 text-red-500"
                 fill="currentColor"
                 viewBox="0 0 20 20"
-                animate={{ scale: [1, 1.2, 1] }}
-                transition={{ duration: 1, repeat: Infinity }}
               >
                 <path
                   fillRule="evenodd"
                   d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
                   clipRule="evenodd"
                 />
-              </motion.svg>
+              </svg>
               <span>for humanity</span>
             </div>
-          </motion.div>
-        </motion.div>
+          </div>
+        </div>
       </div>
     </footer>
   );
