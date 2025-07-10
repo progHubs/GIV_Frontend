@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Campaign } from '../../types';
 
@@ -22,9 +23,14 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
   className = '',
   onClick,
 }) => {
+  const navigate = useNavigate();
+
   const handleCardClick = () => {
     if (onClick) {
       onClick(campaign);
+    } else {
+      // Default behavior: navigate to campaign detail page
+      navigate(`/campaigns/${campaign.id}`);
     }
   };
 
@@ -175,8 +181,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
               whileTap={{ scale: 0.95 }}
               onClick={e => {
                 e.stopPropagation();
-                // Handle donation logic here
-                console.log('Donate to campaign:', campaign.id);
+                // Navigate to campaign detail page with donation focus
+                navigate(`/campaigns/${campaign.id}#donate`);
               }}
               className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md hover:shadow-lg"
             >

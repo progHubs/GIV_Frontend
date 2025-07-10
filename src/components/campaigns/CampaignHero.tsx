@@ -45,7 +45,7 @@ const CampaignHero: React.FC<CampaignHeroProps> = ({ stats }) => {
   };
 
   return (
-    <div className="relative overflow-hidden">
+    <div className="relative overflow-hidden -mt-[80px] h-screen">
       {/* Gradient Background */}
       <div className="absolute inset-0 bg-gradient-to-br from-blue-600 via-blue-500 to-green-500" />
 

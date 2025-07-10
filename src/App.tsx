@@ -25,6 +25,7 @@ import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 // Public Pages
 import HomePage from './pages/HomePage';
 import CampaignsPage from './pages/CampaignsPage';
+import CampaignDetailPage from './pages/CampaignDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -62,6 +63,7 @@ function App() {
             {/* Public routes - No authentication required */}
             <Route path="/" element={<HomePage />} />
             <Route path="/campaigns" element={<CampaignsPage />} />
+            <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
 
             {/* Auth routes */}
             <Route path="/auth/login" element={<LoginPage />} />
