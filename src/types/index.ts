@@ -6,5 +6,8 @@ export * from './auth';
 // API types
 export * from './api';
 
+// Campaign types
+export * from './campaign';
+
 // Re-export commonly used React types
 export type { ReactNode, ComponentProps, FC } from 'react';

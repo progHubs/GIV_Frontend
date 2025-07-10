@@ -41,7 +41,7 @@ const ModernNavigation: React.FC = () => {
   }, []);
 
   // Get user from auth context
-  const { user, logout } = useAuth();
+  const { user, logout, isInitializing } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -156,7 +156,13 @@ const ModernNavigation: React.FC = () => {
 
             {/* Auth Buttons */}
             <div className="hidden md:flex items-center space-x-3">
-              {!user ? (
+              {isInitializing ? (
+                // Show loading state during initialization
+                <div className="flex items-center space-x-3">
+                  <div className="w-16 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-20 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              ) : !user ? (
                 <>
                   <div>
                     <LoadingLink
@@ -309,7 +315,13 @@ const ModernNavigation: React.FC = () => {
             ))}
 
             <div className="pt-4 border-t border-theme space-y-3">
-              {!user ? (
+              {isInitializing ? (
+                // Show loading state during initialization
+                <div className="space-y-3">
+                  <div className="w-full h-10 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                  <div className="w-full h-12 bg-gray-200 dark:bg-gray-700 rounded animate-pulse"></div>
+                </div>
+              ) : !user ? (
                 <>
                   <LoadingLink
                     to="/login"

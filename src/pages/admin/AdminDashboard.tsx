@@ -5,10 +5,12 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '../../theme';
 import ModernNavigation from '../../components/navigation/ModernNavigation';
 
 const AdminDashboard: React.FC = () => {
+  const navigate = useNavigate();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -127,19 +129,20 @@ const AdminDashboard: React.FC = () => {
 
   const quickActions = [
     {
-      title: 'Create Campaign',
-      description: 'Launch a new fundraising campaign',
+      title: 'Manage Campaigns',
+      description: 'Create, edit, and manage campaigns',
       icon: (
         <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
           />
         </svg>
       ),
       color: 'bg-blue-500',
+      onClick: () => navigate('/admin/campaigns'),
     },
     {
       title: 'Manage Users',
@@ -155,6 +158,7 @@ const AdminDashboard: React.FC = () => {
         </svg>
       ),
       color: 'bg-green-500',
+      onClick: () => alert('User management coming soon!'),
     },
     {
       title: 'View Reports',
@@ -170,6 +174,7 @@ const AdminDashboard: React.FC = () => {
         </svg>
       ),
       color: 'bg-purple-500',
+      onClick: () => alert('Reports coming soon!'),
     },
     {
       title: 'Content Management',
@@ -185,6 +190,7 @@ const AdminDashboard: React.FC = () => {
         </svg>
       ),
       color: 'bg-orange-500',
+      onClick: () => alert('Content management coming soon!'),
     },
   ];
 
@@ -252,6 +258,7 @@ const AdminDashboard: React.FC = () => {
                       key={action.title}
                       whileHover={{ y: -4, scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
+                      onClick={action.onClick}
                       className="bg-theme-surface rounded-2xl p-6 shadow-lg border border-theme text-left hover:shadow-xl transition-shadow duration-300"
                     >
                       <div

@@ -24,6 +24,7 @@ import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 
 // Public Pages
 import HomePage from './pages/HomePage';
+import CampaignsPage from './pages/CampaignsPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -32,6 +33,7 @@ import UserProfile from './pages/profile/UserProfile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import CampaignManagement from './pages/admin/CampaignManagement';
 
 // Component to handle legacy reset password URLs with query parameters
 const ResetPasswordRedirect = () => {
@@ -59,6 +61,7 @@ function App() {
           <Routes>
             {/* Public routes - No authentication required */}
             <Route path="/" element={<HomePage />} />
+            <Route path="/campaigns" element={<CampaignsPage />} />
 
             {/* Auth routes */}
             <Route path="/auth/login" element={<LoginPage />} />
@@ -86,6 +89,14 @@ function App() {
               element={
                 <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/campaigns"
+              element={
+                <ProtectedRoute requiredRole="admin">
+                  <CampaignManagement />
                 </ProtectedRoute>
               }
             />

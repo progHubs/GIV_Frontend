@@ -5,6 +5,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import LoadingLink from '../common/LoadingLink';
 
 interface Campaign {
   id: number;
@@ -249,9 +250,9 @@ const FeaturedCampaigns: React.FC = () => {
             <motion.button
               whileHover={{ scale: 1.05, y: -2 }}
               whileTap={{ scale: 0.95 }}
-              className="btn-theme-secondary px-8 py-3 rounded-xl font-semibold text-lg inline-flex items-center shadow-lg hover:shadow-xl transition-shadow"
             >
-              View All Campaigns
+              <LoadingLink to="/campaigns" className="btn-theme-secondary px-8 py-3 rounded-xl font-semibold text-lg inline-flex items-center shadow-lg hover:shadow-xl transition-shadow">
+                View All Campaigns
               <motion.svg
                 className="ml-2 w-5 h-5"
                 fill="none"
@@ -267,6 +268,7 @@ const FeaturedCampaigns: React.FC = () => {
                   d="M17 8l4 4m0 0l-4 4m4-4H3"
                 />
               </motion.svg>
+              </LoadingLink>
             </motion.button>
           </motion.div>
         </motion.div>

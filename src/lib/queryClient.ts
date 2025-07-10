@@ -4,35 +4,50 @@ import { QueryClient } from '@tanstack/react-query';
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Stale time: 5 minutes
-      staleTime: 5 * 60 * 1000,
-      
+      // Stale time: 30 seconds for better pagination
+      staleTime: 30 * 1000,
+
       // Cache time: 10 minutes
       gcTime: 10 * 60 * 1000,
-      
-      // Retry failed requests 3 times
-      retry: 3,
-      
-      // Retry delay function (exponential backoff)
-      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-      
-      // Refetch on window focus
+
+      // Reduce retries to minimize network overhead
+      retry: 1,
+
+      // Faster retry delay
+      retryDelay: 1000,
+
+      // Disable automatic refetching to reduce API calls
       refetchOnWindowFocus: false,
-      
-      // Refetch on reconnect
-      refetchOnReconnect: true,
-      
-      // Refetch on mount if data is stale
-      refetchOnMount: true,
+      refetchOnReconnect: false,
+      refetchOnMount: true, // Enable refetch on mount for fresh data
+
+      // Enable background refetching only when stale
+      refetchInterval: false,
+      refetchIntervalInBackground: false,
+
+      // Reduce network waterfall
+      networkMode: 'online',
     },
     mutations: {
-      // Retry failed mutations once
-      retry: 1,
-      
-      // Retry delay for mutations
-      retryDelay: 1000,
+      // Single retry for mutations
+      retry: 0,
+
+      // No retry delay for mutations
+      retryDelay: 0,
     },
   },
 });
+
+// Query Keys - Centralized key management
+export const queryKeys = {
+  campaigns: {
+    all: ['campaigns'] as const,
+    lists: () => [...queryKeys.campaigns.all, 'list'] as const,
+    list: (filters: any) => [...queryKeys.campaigns.lists(), filters] as const,
+    details: () => [...queryKeys.campaigns.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.campaigns.details(), id] as const,
+    stats: () => [...queryKeys.campaigns.all, 'stats'] as const,
+  },
+} as const;
 
 export default queryClient;

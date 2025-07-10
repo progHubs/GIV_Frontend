@@ -17,12 +17,17 @@ export interface ApiError {
 
 // Pagination Types
 export interface PaginationInfo {
+  currentPage: number;
   page: number;
   limit: number;
   total: number;
   totalPages: number;
+  totalItems: number;
+  itemsPerPage: number;
   hasNext: boolean;
   hasPrev: boolean;
+  hasNextPage: boolean;
+  hasPrevPage: boolean;
 }
 
 export interface PaginationParams {
@@ -91,7 +96,16 @@ export type EntityStatus = 'active' | 'inactive' | 'pending' | 'archived';
 export interface FormField {
   name: string;
   label: string;
-  type: 'text' | 'email' | 'password' | 'tel' | 'textarea' | 'select' | 'checkbox' | 'radio' | 'file';
+  type:
+    | 'text'
+    | 'email'
+    | 'password'
+    | 'tel'
+    | 'textarea'
+    | 'select'
+    | 'checkbox'
+    | 'radio'
+    | 'file';
   required?: boolean;
   placeholder?: string;
   options?: { value: string; label: string }[];
