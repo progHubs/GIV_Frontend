@@ -29,8 +29,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
     if (onClick) {
       onClick(campaign);
     } else {
-      // Default behavior: navigate to campaign detail page
-      navigate(`/campaigns/${campaign.id}`);
+      // Default behavior: navigate to campaign detail page using slug
+      navigate(`/campaigns/${campaign.slug || campaign.id}`);
     }
   };
 
@@ -181,8 +181,8 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
               whileTap={{ scale: 0.95 }}
               onClick={e => {
                 e.stopPropagation();
-                // Navigate to campaign detail page with donation focus
-                navigate(`/campaigns/${campaign.id}#donate`);
+                // Navigate to campaign detail page with donation focus using slug
+                navigate(`/campaigns/${campaign.slug || campaign.id}#donate`);
               }}
               className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md hover:shadow-lg"
             >

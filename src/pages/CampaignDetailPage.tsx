@@ -127,7 +127,7 @@ const CampaignDetailPage: React.FC = () => {
         >
           {/* Campaign Hero Section */}
           <motion.div variants={itemVariants}>
-            <CampaignDetailHero campaign={campaign} />
+            <CampaignDetailHero campaign={campaign} loading={isLoading} />
           </motion.div>
 
           {/* Main Content Area */}

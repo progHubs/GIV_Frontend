@@ -26,7 +26,7 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
 
   const apiData = campaignsData as any;
   const allCampaigns = apiData?.data || [];
-  
+
   // Filter out current campaign and limit to 3
   const relatedCampaigns = allCampaigns
     .filter((campaign: Campaign) => campaign.id !== currentCampaign.id)
@@ -45,12 +45,21 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
   // Get category color
   const getCategoryColor = (category: string) => {
     const colors = {
-      health: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
+      healthcare: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',
       education: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200',
-      environment: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
-      community: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+      community_development:
+        'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200',
+      emergency_relief: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
+      youth_development: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',
+      mental_health: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200',
+      disease_prevention: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-200',
+      environmental: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200',
+      other: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200',
     };
-    return colors[category as keyof typeof colors] || 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+    return (
+      colors[category as keyof typeof colors] ||
+      'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200'
+    );
   };
 
   // Calculate days remaining
@@ -90,7 +99,10 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
           <h2 className="text-3xl font-bold text-theme-primary mb-8">Related Campaigns</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="bg-theme-background rounded-2xl shadow-lg border border-theme overflow-hidden">
+              <div
+                key={i}
+                className="bg-theme-background rounded-2xl shadow-lg border border-theme overflow-hidden"
+              >
                 <div className="h-48 bg-gray-200 dark:bg-gray-700 animate-pulse"></div>
                 <div className="p-6 space-y-4">
                   <div className="w-20 h-5 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse"></div>
@@ -127,10 +139,13 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
         >
           <motion.div variants={itemVariants} className="text-center mb-12">
             <h2 className="text-3xl font-bold text-theme-primary mb-4">
-              More {currentCampaign.category.charAt(0).toUpperCase() + currentCampaign.category.slice(1)} Campaigns
+              More{' '}
+              {currentCampaign.category.charAt(0).toUpperCase() + currentCampaign.category.slice(1)}{' '}
+              Campaigns
             </h2>
             <p className="text-theme-muted max-w-2xl mx-auto">
-              Discover other impactful campaigns in the {currentCampaign.category} category that need your support.
+              Discover other impactful campaigns in the {currentCampaign.category} category that
+              need your support.
             </p>
           </motion.div>
 
@@ -143,7 +158,7 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
                 transition={{ duration: 0.3 }}
                 className="bg-theme-background rounded-2xl shadow-lg border border-theme overflow-hidden hover:shadow-xl transition-all duration-300"
               >
-                <Link to={`/campaigns/${campaign.id}`} className="block">
+                <Link to={`/campaigns/${campaign.slug || campaign.id}`} className="block">
                   {/* Campaign Image */}
                   <div className="relative h-48 overflow-hidden">
                     {campaign.image_url ? (
@@ -165,8 +180,12 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
 
                     {/* Category badge */}
                     <div className="absolute top-4 right-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(campaign.category)}`}>
-                        {campaign.category.charAt(0).toUpperCase() + campaign.category.slice(1)}
+                      <span
+                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(campaign.category)}`}
+                      >
+                        {campaign.category
+                          .replace(/_/g, ' ')
+                          .replace(/\b\w/g, l => l.toUpperCase())}
                       </span>
                     </div>
                   </div>
@@ -214,10 +233,10 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={(e) => {
+                        onClick={e => {
                           e.preventDefault();
-                          // Navigate to campaign detail page
-                          window.location.href = `/campaigns/${campaign.id}`;
+                          // Navigate to campaign detail page using slug
+                          window.location.href = `/campaigns/${campaign.slug || campaign.id}`;
                         }}
                         className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >
@@ -236,9 +255,16 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
               to={`/campaigns?category=${currentCampaign.category}`}
               className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-500 hover:bg-blue-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
             >
-              View All {currentCampaign.category.charAt(0).toUpperCase() + currentCampaign.category.slice(1)} Campaigns
+              View All{' '}
+              {currentCampaign.category.charAt(0).toUpperCase() + currentCampaign.category.slice(1)}{' '}
+              Campaigns
               <svg className="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 8l4 4m0 0l-4 4m4-4H3"
+                />
               </svg>
             </Link>
           </motion.div>

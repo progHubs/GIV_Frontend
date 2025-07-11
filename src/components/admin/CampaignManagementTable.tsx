@@ -128,12 +128,49 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
     }).format(parseFloat(amount));
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-    });
+  const formatDate = (dateInput: any) => {
+    // Handle null, undefined, empty string, or empty object
+    if (
+      !dateInput ||
+      dateInput === 'null' ||
+      dateInput === 'undefined' ||
+      dateInput === '' ||
+      (typeof dateInput === 'object' && Object.keys(dateInput).length === 0)
+    ) {
+      return 'N/A';
+    }
+
+    try {
+      // Handle different date formats
+      let date: Date;
+
+      // If it's already a Date object
+      if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'string') {
+        // Convert string to date
+        date = new Date(dateInput);
+      } else {
+        // For any other type, try to convert to string first
+        console.warn('Unexpected date type received:', typeof dateInput, dateInput);
+        return 'N/A';
+      }
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date received:', dateInput);
+        return 'N/A';
+      }
+
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Input:', dateInput);
+      return 'N/A';
+    }
   };
 
   const getStatusBadge = (campaign: Campaign) => {
@@ -340,6 +377,22 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
                 <button
+                  onClick={() => handleSort('end_date')}
+                  className="flex items-center space-x-1 hover:text-theme-primary"
+                >
+                  <span>End Date</span>
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+                    />
+                  </svg>
+                </button>
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
+                <button
                   onClick={() => handleSort('created_at')}
                   className="flex items-center space-x-1 hover:text-theme-primary"
                 >
@@ -418,6 +471,9 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(campaign)}</td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-muted">
+                  {formatDate(campaign.end_date)}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-muted">
                   {formatDate(campaign.created_at)}
                 </td>

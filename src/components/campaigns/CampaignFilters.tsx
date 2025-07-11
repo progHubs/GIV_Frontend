@@ -43,10 +43,15 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
   }, [searchQuery, filters.search, onFiltersChange]);
 
   const categories: { value: CampaignCategory; label: string }[] = [
-    { value: 'health', label: 'Health' },
+    { value: 'healthcare', label: 'Healthcare' },
     { value: 'education', label: 'Education' },
-    { value: 'environment', label: 'Environment' },
-    { value: 'community', label: 'Community' },
+    { value: 'community_development', label: 'Community Development' },
+    { value: 'emergency_relief', label: 'Emergency Relief' },
+    { value: 'youth_development', label: 'Youth Development' },
+    { value: 'mental_health', label: 'Mental Health' },
+    { value: 'disease_prevention', label: 'Disease Prevention' },
+    { value: 'environmental', label: 'Environmental' },
+    { value: 'other', label: 'Other' },
   ];
 
   const sortOptions = [

@@ -6,7 +6,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import type { Campaign, CampaignFormData, CampaignCategory } from '../../types';
+import type { Campaign, CampaignFormData, CampaignCategory, SuccessStory } from '../../types';
 
 interface CampaignFormProps {
   mode: 'create' | 'edit';
@@ -18,17 +18,66 @@ interface CampaignFormProps {
 const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Helper function to safely parse success stories
+  const parseSuccessStories = (stories: any): SuccessStory[] => {
+    if (!stories) return [];
+    if (Array.isArray(stories)) return stories;
+    if (typeof stories === 'string') {
+      try {
+        const parsed = JSON.parse(stories);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  const [successStories, setSuccessStories] = useState<SuccessStory[]>(
+    parseSuccessStories(campaign?.success_stories)
+  );
 
   // Helper function to safely format date for input
-  const formatDateForInput = (dateString: string | null | undefined): string => {
-    if (!dateString) return '';
+  const formatDateForInput = (dateInput: any): string => {
+    // Handle null, undefined, empty string, or empty object
+    if (
+      !dateInput ||
+      dateInput === 'null' ||
+      dateInput === 'undefined' ||
+      dateInput === '' ||
+      (typeof dateInput === 'object' && Object.keys(dateInput).length === 0)
+    ) {
+      return '';
+    }
+
     try {
-      // Handle different date formats
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return '';
+      // Handle different date formats and ensure valid date
+      let date;
+
+      // If it's already in YYYY-MM-DD format, use it directly
+      if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        return dateInput;
+      }
+
+      // Only process strings and Date objects
+      if (typeof dateInput === 'string' || dateInput instanceof Date) {
+        // Try to parse the date
+        date = new Date(dateInput);
+      } else {
+        console.warn('Unexpected date type for input:', typeof dateInput, dateInput);
+        return '';
+      }
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date provided:', dateInput);
+        return '';
+      }
+
+      // Return in YYYY-MM-DD format for date input
       return date.toISOString().split('T')[0];
     } catch (error) {
-      console.error('Error formatting date:', error);
+      console.error('Error formatting date:', error, 'Input:', dateInput);
       return '';
     }
   };
@@ -53,21 +102,55 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
           language: campaign.language || 'en',
           is_active: campaign.is_active,
           is_featured: campaign.is_featured,
+          success_stories: parseSuccessStories(campaign.success_stories),
         }
       : {
           language: 'en',
           is_active: true,
           is_featured: false,
           progress_bar_color: '#3B82F6',
+          success_stories: [],
         },
   });
 
   const categories: { value: CampaignCategory; label: string }[] = [
-    { value: 'health', label: 'Health' },
+    { value: 'healthcare', label: 'Healthcare' },
     { value: 'education', label: 'Education' },
-    { value: 'environment', label: 'Environment' },
-    { value: 'community', label: 'Community' },
+    { value: 'community_development', label: 'Community Development' },
+    { value: 'emergency_relief', label: 'Emergency Relief' },
+    { value: 'youth_development', label: 'Youth Development' },
+    { value: 'mental_health', label: 'Mental Health' },
+    { value: 'disease_prevention', label: 'Disease Prevention' },
+    { value: 'environmental', label: 'Environmental' },
+    { value: 'other', label: 'Other' },
   ];
+
+  // Success Stories Management
+  const addSuccessStory = () => {
+    setSuccessStories([
+      ...successStories,
+      {
+        title: '',
+        description: '',
+        image_url: '',
+        date: new Date().toISOString().split('T')[0],
+      },
+    ]);
+  };
+
+  const updateSuccessStory = (index: number, field: keyof SuccessStory, value: string) => {
+    if (Array.isArray(successStories) && successStories[index]) {
+      const updated = [...successStories];
+      updated[index] = { ...updated[index], [field]: value };
+      setSuccessStories(updated);
+    }
+  };
+
+  const removeSuccessStory = (index: number) => {
+    if (Array.isArray(successStories)) {
+      setSuccessStories(successStories.filter((_, i) => i !== index));
+    }
+  };
 
   const colorOptions = [
     { value: '#3B82F6', label: 'Blue', color: 'bg-blue-500' },
@@ -82,7 +165,16 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
     try {
       setLoading(true);
       setError(null);
-      await onSubmit(data);
+
+      // Include success stories in the form data
+      const formDataWithStories = {
+        ...data,
+        success_stories: Array.isArray(successStories)
+          ? successStories.filter(story => story.title.trim() && story.description.trim())
+          : [],
+      };
+
+      await onSubmit(formDataWithStories);
     } catch (err: any) {
       setError(err.message || 'Failed to save campaign');
     } finally {
@@ -299,6 +391,110 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
                 className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="https://example.com/video.mp4"
               />
+            </div>
+
+            {/* Success Stories */}
+            <div className="col-span-2">
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-theme-primary">
+                  Success Stories
+                </label>
+                <button
+                  type="button"
+                  onClick={addSuccessStory}
+                  className="px-3 py-1 text-sm bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors duration-200"
+                >
+                  Add Story
+                </button>
+              </div>
+
+              {!Array.isArray(successStories) || successStories.length === 0 ? (
+                <div className="text-center py-8 border-2 border-dashed border-theme rounded-lg">
+                  <div className="text-4xl mb-2">🌟</div>
+                  <p className="text-theme-muted">No success stories yet</p>
+                  <p className="text-sm text-theme-muted">
+                    Click "Add Story" to create your first success story
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {Array.isArray(successStories) &&
+                    successStories.map((story, index) => (
+                      <div
+                        key={index}
+                        className="border border-theme rounded-lg p-4 bg-theme-background"
+                      >
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="font-medium text-theme-primary">
+                            Success Story {index + 1}
+                          </h4>
+                          <button
+                            type="button"
+                            onClick={() => removeSuccessStory(index)}
+                            className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                          >
+                            Remove
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-theme-primary mb-1">
+                              Title
+                            </label>
+                            <input
+                              type="text"
+                              value={story.title}
+                              onChange={e => updateSuccessStory(index, 'title', e.target.value)}
+                              className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-surface text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Success story title"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-theme-primary mb-1">
+                              Date
+                            </label>
+                            <input
+                              type="date"
+                              value={story.date}
+                              onChange={e => updateSuccessStory(index, 'date', e.target.value)}
+                              className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-surface text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-theme-primary mb-1">
+                              Description
+                            </label>
+                            <textarea
+                              value={story.description}
+                              onChange={e =>
+                                updateSuccessStory(index, 'description', e.target.value)
+                              }
+                              rows={3}
+                              className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-surface text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="Describe the success story..."
+                            />
+                          </div>
+
+                          <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-theme-primary mb-1">
+                              Image URL (Optional)
+                            </label>
+                            <input
+                              type="url"
+                              value={story.image_url || ''}
+                              onChange={e => updateSuccessStory(index, 'image_url', e.target.value)}
+                              className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-surface text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              placeholder="https://example.com/success-image.jpg"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              )}
             </div>
 
             {/* Language */}

@@ -3,10 +3,27 @@
 import type { BaseEntity } from './api';
 
 // Campaign Categories
-export type CampaignCategory = 'health' | 'education' | 'environment' | 'community';
+export type CampaignCategory =
+  | 'healthcare'
+  | 'education'
+  | 'community_development'
+  | 'emergency_relief'
+  | 'youth_development'
+  | 'mental_health'
+  | 'disease_prevention'
+  | 'environmental'
+  | 'other';
 
 // Campaign Status
 export type CampaignStatus = 'active' | 'inactive' | 'completed' | 'paused';
+
+// Success Story Interface
+export interface SuccessStory {
+  title: string;
+  description: string;
+  image_url?: string;
+  date: string;
+}
 
 // Campaign Entity
 export interface Campaign extends BaseEntity {
@@ -24,7 +41,7 @@ export interface Campaign extends BaseEntity {
   image_url?: string;
   video_url?: string;
   donor_count: number;
-  success_stories?: string[];
+  success_stories?: SuccessStory[];
   language: string;
   translation_group_id: string;
   progress_percentage: number;
@@ -47,6 +64,7 @@ export interface CampaignFormData {
   progress_bar_color?: string;
   image_url?: string;
   video_url?: string;
+  success_stories?: SuccessStory[];
   language?: string;
   is_active?: boolean;
   is_featured?: boolean;

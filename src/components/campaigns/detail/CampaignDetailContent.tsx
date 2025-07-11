@@ -5,14 +5,32 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import type { Campaign } from '../../../types';
+import type { Campaign, SuccessStory } from '../../../types';
 
 interface CampaignDetailContentProps {
   campaign: Campaign;
 }
 
 const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'updates' | 'donors'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'stories' | 'donors'>('overview');
+
+  // Helper function to safely parse success stories
+  const parseSuccessStories = (stories: any): SuccessStory[] => {
+    if (!stories) return [];
+    if (Array.isArray(stories)) return stories;
+    if (typeof stories === 'string') {
+      try {
+        const parsed = JSON.parse(stories);
+        return Array.isArray(parsed) ? parsed : [];
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  };
+
+  // Get safely parsed success stories
+  const successStories = parseSuccessStories(campaign.success_stories);
 
   // Mock data for demonstration
   const impactMetrics = [
@@ -33,26 +51,14 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
     },
   ];
 
-  const campaignUpdates = [
-    {
-      id: 1,
-      title: 'Great progress on our water well project!',
-      content: 'We have successfully completed 60% of the water well construction. The local community has been incredibly supportive, and we expect to finish ahead of schedule.',
-      date: '2024-01-15',
-      author: campaign.users?.full_name || 'Campaign Creator',
-    },
-    {
-      id: 2,
-      title: 'Thank you for your amazing support!',
-      content: 'We have reached 75% of our funding goal! This incredible milestone brings us closer to providing clean water access to over 500 families in the region.',
-      date: '2024-01-10',
-      author: campaign.users?.full_name || 'Campaign Creator',
-    },
-  ];
-
   const recentDonors = [
     { name: 'Anonymous', amount: 100, date: '2024-01-16', message: 'Keep up the great work!' },
-    { name: 'Sarah Johnson', amount: 50, date: '2024-01-16', message: 'Happy to support this cause' },
+    {
+      name: 'Sarah Johnson',
+      amount: 50,
+      date: '2024-01-16',
+      message: 'Happy to support this cause',
+    },
     { name: 'Michael Chen', amount: 25, date: '2024-01-15', message: '' },
     { name: 'Anonymous', amount: 200, date: '2024-01-15', message: 'Every drop counts!' },
     { name: 'Emily Davis', amount: 75, date: '2024-01-14', message: 'For a better future' },
@@ -69,12 +75,49 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
   };
 
   // Format date
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    });
+  const formatDate = (dateInput: any) => {
+    // Handle null, undefined, empty string, or empty object
+    if (
+      !dateInput ||
+      dateInput === 'null' ||
+      dateInput === 'undefined' ||
+      dateInput === '' ||
+      (typeof dateInput === 'object' && Object.keys(dateInput).length === 0)
+    ) {
+      return 'N/A';
+    }
+
+    try {
+      // Handle different date formats
+      let date: Date;
+
+      // If it's already a Date object
+      if (dateInput instanceof Date) {
+        date = dateInput;
+      } else if (typeof dateInput === 'string') {
+        // Convert string to date
+        date = new Date(dateInput);
+      } else {
+        // For any other type, try to convert to string first
+        console.warn('Unexpected date type received:', typeof dateInput, dateInput);
+        return 'N/A';
+      }
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        console.warn('Invalid date received:', dateInput);
+        return 'N/A';
+      }
+
+      return date.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error, 'Input:', dateInput);
+      return 'N/A';
+    }
   };
 
   const tabVariants = {
@@ -89,9 +132,9 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
         <nav className="flex space-x-8">
           {[
             { key: 'overview', label: 'Overview' },
-            { key: 'updates', label: 'Updates' },
+            { key: 'stories', label: 'Success Stories' },
             { key: 'donors', label: 'Donors' },
-          ].map((tab) => (
+          ].map(tab => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key as any)}
@@ -175,49 +218,61 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
           </motion.div>
         )}
 
-        {/* Updates Tab */}
-        {activeTab === 'updates' && (
+        {/* Success Stories Tab */}
+        {activeTab === 'stories' && (
           <motion.div
-            key="updates"
+            key="stories"
             variants={tabVariants}
             initial="hidden"
             animate="visible"
             className="space-y-6"
           >
             <div className="bg-theme-surface rounded-2xl p-6 shadow-lg border border-theme">
-              <h2 className="text-2xl font-bold text-theme-primary mb-6">Campaign Updates</h2>
-              {campaignUpdates.length > 0 ? (
+              <h2 className="text-2xl font-bold text-theme-primary mb-6">Success Stories</h2>
+              {successStories.length > 0 ? (
                 <div className="space-y-6">
-                  {campaignUpdates.map((update, index) => (
+                  {successStories.map((story, index) => (
                     <motion.div
-                      key={update.id}
+                      key={index}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: index * 0.1 }}
-                      className="border-l-4 border-blue-500 pl-6 pb-6 last:pb-0"
+                      className="border border-theme rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
                     >
-                      <div className="flex items-center space-x-3 mb-3">
-                        <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                          <span className="text-white text-sm font-semibold">
-                            {update.author.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold text-theme-primary">{update.title}</h3>
-                          <p className="text-sm text-theme-muted">
-                            {update.author} • {formatDate(update.date)}
-                          </p>
+                      <div className="flex flex-col md:flex-row gap-6">
+                        {/* Story Image */}
+                        {story.image_url && (
+                          <div className="md:w-1/3">
+                            <img
+                              src={story.image_url}
+                              alt={story.title}
+                              className="w-full h-48 md:h-32 object-cover rounded-lg"
+                            />
+                          </div>
+                        )}
+
+                        {/* Story Content */}
+                        <div className={story.image_url ? 'md:w-2/3' : 'w-full'}>
+                          <div className="flex items-start justify-between mb-3">
+                            <h3 className="text-lg font-semibold text-theme-primary">
+                              {story.title}
+                            </h3>
+                            <span className="text-sm text-theme-muted flex-shrink-0 ml-4">
+                              {formatDate(story.date)}
+                            </span>
+                          </div>
+                          <p className="text-theme-muted leading-relaxed">{story.description}</p>
                         </div>
                       </div>
-                      <p className="text-theme-muted leading-relaxed">{update.content}</p>
                     </motion.div>
                   ))}
                 </div>
               ) : (
                 <div className="text-center py-8">
-                  <div className="text-theme-muted mb-2">No updates yet</div>
+                  <div className="text-4xl mb-4">🌟</div>
+                  <div className="text-theme-muted mb-2">No success stories yet</div>
                   <p className="text-sm text-theme-muted">
-                    Check back later for campaign updates from the creator.
+                    Success stories will appear here as the campaign achieves its goals.
                   </p>
                 </div>
               )}
@@ -271,9 +326,7 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
               ) : (
                 <div className="text-center py-8">
                   <div className="text-theme-muted mb-2">No donations yet</div>
-                  <p className="text-sm text-theme-muted">
-                    Be the first to support this campaign!
-                  </p>
+                  <p className="text-sm text-theme-muted">Be the first to support this campaign!</p>
                 </div>
               )}
             </div>
@@ -290,7 +343,9 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
                 </div>
                 <div className="text-center">
                   <div className="text-3xl font-bold text-green-600 mb-2">
-                    {formatCurrency(parseFloat(campaign.current_amount) / campaign.donor_count || 0)}
+                    {formatCurrency(
+                      parseFloat(campaign.current_amount) / campaign.donor_count || 0
+                    )}
                   </div>
                   <p className="text-theme-muted">Average Donation</p>
                 </div>
