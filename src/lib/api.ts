@@ -169,12 +169,20 @@ apiClient.interceptors.response.use(
 
         console.error('❌ Token refresh failed:', refreshError);
 
-        // Dispatch custom event for auth context to handle
+        // Clear all user data immediately
+        clearTokens();
+
+        // Dispatch custom event for complete logout
         window.dispatchEvent(
-          new CustomEvent('auth:logout', {
+          new CustomEvent('auth:complete-logout', {
             detail: { reason: 'token_refresh_failed' },
           })
         );
+
+        // Force redirect to login page
+        setTimeout(() => {
+          window.location.href = '/login';
+        }, 100);
 
         return Promise.reject(refreshError);
       } finally {

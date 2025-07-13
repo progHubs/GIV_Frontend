@@ -76,9 +76,34 @@ export const authService = {
 
       return response;
     } finally {
-      // Always clear tokens, even if logout request fails
-      clearTokens();
+      // Always clear all user data, even if logout request fails
+      authService.clearAllUserData();
     }
+  },
+
+  /**
+   * Clear all user data from browser
+   * This ensures complete cleanup on logout
+   */
+  clearAllUserData: () => {
+    // Clear authentication tokens
+    clearTokens();
+
+    // Clear localStorage
+    localStorage.clear();
+
+    // Clear sessionStorage
+    sessionStorage.clear();
+
+    // Clear cookies (if any)
+    document.cookie.split(';').forEach(c => {
+      const eqPos = c.indexOf('=');
+      const name = eqPos > -1 ? c.substr(0, eqPos) : c;
+      document.cookie = name + '=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/';
+    });
+
+    // Emit logout event for React Query cleanup
+    window.dispatchEvent(new CustomEvent('auth:complete-logout'));
   },
 
   /**

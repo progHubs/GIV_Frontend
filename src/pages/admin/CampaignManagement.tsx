@@ -5,9 +5,9 @@
 
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { ThemeProvider } from '../../theme';
-import ModernNavigation from '../../components/navigation/ModernNavigation';
+import { useNavigate } from 'react-router-dom';
 import CampaignManagementTable from '../../components/admin/CampaignManagementTable';
+import CampaignManagementFilters from '../../components/admin/CampaignManagementFilters';
 import CampaignForm from '../../components/admin/CampaignForm';
 import CampaignStats from '../../components/admin/CampaignStatsAdmin';
 import {
@@ -20,6 +20,7 @@ import {
 import type { Campaign, CampaignFilters } from '../../types';
 
 const CampaignManagement: React.FC = () => {
+  const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
   const [filters, setFilters] = useState<CampaignFilters>({
@@ -110,80 +111,102 @@ const CampaignManagement: React.FC = () => {
   };
 
   return (
-    <ThemeProvider>
-      <div className="min-h-screen bg-theme-background">
-        <ModernNavigation />
-
-        <div className="pt-20 pb-16">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-              className="space-y-8"
-            >
-              {/* Header */}
-              <motion.div variants={itemVariants} className="flex items-center justify-between">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="pt-8 pb-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+            className="space-y-8"
+          >
+            {/* Header */}
+            <motion.div variants={itemVariants} className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate('/admin/dashboard')}
+                  className="flex items-center gap-2 text-theme-muted hover:text-theme-primary transition-colors duration-200"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  {/* Back to Dashboard */}
+                </motion.button>
                 <div>
                   <h1 className="text-3xl font-bold text-theme-primary">Campaign Management</h1>
                   <p className="text-theme-muted mt-2">Manage and monitor all campaigns</p>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setShowCreateForm(true)}
-                  className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
-                >
-                  Create Campaign
-                </motion.button>
-              </motion.div>
-
-              {/* Statistics */}
-              {stats && (
-                <motion.div variants={itemVariants}>
-                  <CampaignStats stats={stats} />
-                </motion.div>
-              )}
-
-              {/* Campaign Table */}
-              <motion.div variants={itemVariants}>
-                <CampaignManagementTable
-                  campaigns={campaignData.campaigns}
-                  loading={campaignData.loading}
-                  error={campaignData.error}
-                  currentPage={campaignData.currentPage}
-                  totalPages={campaignData.totalPages}
-                  filters={filters}
-                  onFiltersChange={handleFiltersChange}
-                  onEdit={setEditingCampaign}
-                  onDelete={handleDeleteCampaign}
-                  onRetry={() => window.location.reload()}
-                />
-              </motion.div>
+              </div>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setShowCreateForm(true)}
+                className="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-lg hover:shadow-xl"
+              >
+                Create Campaign
+              </motion.button>
             </motion.div>
-          </div>
+
+            {/* Statistics */}
+            {stats && (
+              <motion.div variants={itemVariants}>
+                <CampaignStats stats={stats} />
+              </motion.div>
+            )}
+
+            {/* Campaign Filters */}
+            <motion.div variants={itemVariants}>
+              <CampaignManagementFilters
+                filters={filters}
+                onFiltersChange={handleFiltersChange}
+                loading={campaignData.loading}
+              />
+            </motion.div>
+
+            {/* Campaign Table */}
+            <motion.div variants={itemVariants}>
+              <CampaignManagementTable
+                campaigns={campaignData.campaigns}
+                loading={campaignData.loading}
+                error={campaignData.error}
+                currentPage={campaignData.currentPage}
+                totalPages={campaignData.totalPages}
+                onEdit={setEditingCampaign}
+                onDelete={handleDeleteCampaign}
+                onRetry={() => window.location.reload()}
+                onPageChange={page => handleFiltersChange({ page })}
+              />
+            </motion.div>
+          </motion.div>
         </div>
-
-        {/* Create Campaign Modal */}
-        {showCreateForm && (
-          <CampaignForm
-            mode="create"
-            onSubmit={handleCreateCampaign}
-            onCancel={() => setShowCreateForm(false)}
-          />
-        )}
-
-        {/* Edit Campaign Modal */}
-        {editingCampaign && (
-          <CampaignForm
-            mode="edit"
-            campaign={editingCampaign}
-            onSubmit={data => handleUpdateCampaign(editingCampaign.id, data)}
-            onCancel={() => setEditingCampaign(null)}
-          />
-        )}
       </div>
-    </ThemeProvider>
+
+      {/* Create Campaign Modal */}
+      {showCreateForm && (
+        <CampaignForm
+          mode="create"
+          onSubmit={handleCreateCampaign}
+          onCancel={() => setShowCreateForm(false)}
+        />
+      )}
+
+      {/* Edit Campaign Modal */}
+      {editingCampaign && (
+        <CampaignForm
+          mode="edit"
+          campaign={editingCampaign}
+          onSubmit={data => handleUpdateCampaign(editingCampaign.id, data)}
+          onCancel={() => setEditingCampaign(null)}
+        />
+      )}
+    </div>
   );
 };
 

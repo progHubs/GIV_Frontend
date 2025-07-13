@@ -78,6 +78,23 @@ const CampaignStatsAdmin: React.FC<CampaignStatsAdminProps> = ({ stats }) => {
       color: 'bg-green-500',
     },
     {
+      title: 'Completed Campaigns',
+      value: stats.completed_campaigns.toLocaleString(),
+      change: '+3',
+      changeType: 'positive',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+          />
+        </svg>
+      ),
+      color: 'bg-purple-500',
+    },
+    {
       title: 'Total Raised',
       value: formatCurrency(stats.total_current_amount),
       change: '+18.2%',
@@ -92,7 +109,7 @@ const CampaignStatsAdmin: React.FC<CampaignStatsAdminProps> = ({ stats }) => {
           />
         </svg>
       ),
-      color: 'bg-purple-500',
+      color: 'bg-indigo-500',
     },
     {
       title: 'Featured Campaigns',
@@ -114,15 +131,22 @@ const CampaignStatsAdmin: React.FC<CampaignStatsAdminProps> = ({ stats }) => {
   ];
 
   const categoryStats = stats.category_breakdown.map(categoryData => ({
-    category: categoryData.category.charAt(0).toUpperCase() + categoryData.category.slice(1),
+    category:
+      categoryData.category.charAt(0).toUpperCase() +
+      categoryData.category.slice(1).replace(/_/g, ' '),
     count: categoryData.count,
     percentage: ((categoryData.count / stats.total_campaigns) * 100).toFixed(1),
     color:
       {
-        health: 'bg-red-500',
+        healthcare: 'bg-red-500',
         education: 'bg-blue-500',
-        environment: 'bg-green-500',
-        community: 'bg-purple-500',
+        community_development: 'bg-purple-500',
+        emergency_relief: 'bg-orange-500',
+        youth_development: 'bg-indigo-500',
+        mental_health: 'bg-pink-500',
+        disease_prevention: 'bg-teal-500',
+        environmental: 'bg-green-500',
+        other: 'bg-gray-500',
       }[categoryData.category] || 'bg-gray-500',
   }));
 

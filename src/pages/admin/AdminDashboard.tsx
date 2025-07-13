@@ -8,9 +8,15 @@ import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '../../theme';
 import ModernNavigation from '../../components/navigation/ModernNavigation';
+import { useDonationStats, useDonorStats } from '../../hooks/useDonations';
+import { useStripeUtils } from '../../hooks/useStripe';
 
 const AdminDashboard: React.FC = () => {
   const navigate = useNavigate();
+  const { data: donationStats } = useDonationStats();
+  const { data: donorStats } = useDonorStats();
+  const { formatCurrency } = useStripeUtils();
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -31,9 +37,9 @@ const AdminDashboard: React.FC = () => {
 
   const stats = [
     {
-      title: 'Total Users',
-      value: '2,847',
-      change: '+12%',
+      title: 'Total Donors',
+      value: donorStats?.totalDonors?.toString() || '0',
+      // change: '+12%',
       changeType: 'positive',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -41,31 +47,33 @@ const AdminDashboard: React.FC = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
-          />
-        </svg>
-      ),
-    },
-    {
-      title: 'Active Campaigns',
-      value: '24',
-      change: '+3',
-      changeType: 'positive',
-      icon: (
-        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
           />
         </svg>
       ),
     },
     {
       title: 'Total Donations',
-      value: '$127,450',
-      change: '+8.2%',
+      value: donationStats?.total_donations?.toString() || '0',
+      // change: '+3',
+      changeType: 'positive',
+      icon: (
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+          />
+        </svg>
+      ),
+    },
+    {
+      title: 'Total Amount',
+      value: donationStats?.total_amount
+        ? formatCurrency(parseFloat(donationStats.total_amount))
+        : '$0',
+      // change: '+8.2%',
       changeType: 'positive',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,9 +87,9 @@ const AdminDashboard: React.FC = () => {
       ),
     },
     {
-      title: 'Volunteers',
-      value: '156',
-      change: '+5',
+      title: 'Recurring Donors',
+      value: donorStats?.recurringDonors?.toString() || '0',
+      // change: '+5',
       changeType: 'positive',
       icon: (
         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +97,7 @@ const AdminDashboard: React.FC = () => {
             strokeLinecap="round"
             strokeLinejoin="round"
             strokeWidth={2}
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
           />
         </svg>
       ),
@@ -145,6 +153,38 @@ const AdminDashboard: React.FC = () => {
       onClick: () => navigate('/admin/campaigns'),
     },
     {
+      title: 'Manage Donations',
+      description: 'View and manage all donations',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+          />
+        </svg>
+      ),
+      color: 'bg-green-500',
+      onClick: () => navigate('/admin/donations'),
+    },
+    {
+      title: 'Manage Donors',
+      description: 'View and manage donor profiles',
+      icon: (
+        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          />
+        </svg>
+      ),
+      color: 'bg-purple-500',
+      onClick: () => navigate('/admin/donors'),
+    },
+    {
       title: 'Manage Users',
       description: 'View and manage user accounts',
       icon: (
@@ -157,24 +197,8 @@ const AdminDashboard: React.FC = () => {
           />
         </svg>
       ),
-      color: 'bg-green-500',
-      onClick: () => alert('User management coming soon!'),
-    },
-    {
-      title: 'View Reports',
-      description: 'Access detailed analytics and reports',
-      icon: (
-        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-          />
-        </svg>
-      ),
-      color: 'bg-purple-500',
-      onClick: () => alert('Reports coming soon!'),
+      color: 'bg-indigo-500',
+      onClick: () => navigate('/admin/users'),
     },
     {
       title: 'Content Management',
@@ -233,13 +257,7 @@ const AdminDashboard: React.FC = () => {
                   >
                     <div className="flex items-center justify-between">
                       <div className="text-theme-primary">{stat.icon}</div>
-                      <span
-                        className={`text-sm font-medium ${
-                          stat.changeType === 'positive' ? 'text-green-600' : 'text-red-600'
-                        }`}
-                      >
-                        {stat.change}
-                      </span>
+                      {/* Change indicator temporarily disabled */}
                     </div>
                     <div className="mt-4">
                       <h3 className="text-2xl font-bold text-theme-primary">{stat.value}</h3>

@@ -20,8 +20,12 @@ const PublicLayout: React.FC<PublicLayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     try {
       await logout();
+      // Force a complete page reload to ensure all state is cleared
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, force reload to clear state
+      window.location.href = '/login';
     }
   };
 

@@ -5,6 +5,8 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useCampaignDonations } from '../../../hooks/useDonations';
+import { useStripeUtils } from '../../../hooks/useStripe';
 import type { Campaign, SuccessStory } from '../../../types';
 
 interface CampaignDetailContentProps {
@@ -13,6 +15,14 @@ interface CampaignDetailContentProps {
 
 const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'stories' | 'donors'>('overview');
+
+  // Fetch real donation data for this campaign
+  const { data: donationsData, isLoading: donationsLoading } = useCampaignDonations(campaign.id, {
+    limit: 10,
+    sortBy: 'donated_at',
+    sortOrder: 'desc',
+  });
+  const { formatCurrency } = useStripeUtils();
 
   // Helper function to safely parse success stories
   const parseSuccessStories = (stories: any): SuccessStory[] => {
@@ -51,28 +61,19 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
     },
   ];
 
-  const recentDonors = [
-    { name: 'Anonymous', amount: 100, date: '2024-01-16', message: 'Keep up the great work!' },
-    {
-      name: 'Sarah Johnson',
-      amount: 50,
-      date: '2024-01-16',
-      message: 'Happy to support this cause',
-    },
-    { name: 'Michael Chen', amount: 25, date: '2024-01-15', message: '' },
-    { name: 'Anonymous', amount: 200, date: '2024-01-15', message: 'Every drop counts!' },
-    { name: 'Emily Davis', amount: 75, date: '2024-01-14', message: 'For a better future' },
-  ];
+  // Transform real donation data for display
+  const recentDonors = React.useMemo(() => {
+    if (!donationsData?.data) return [];
 
-  // Format currency
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(amount);
-  };
+    return donationsData.data.map(donation => ({
+      name: donation.is_anonymous
+        ? 'Anonymous'
+        : donation.donor_profiles?.users?.full_name || 'Anonymous',
+      amount: parseFloat(donation.amount),
+      date: donation.donated_at,
+      message: donation.notes || '',
+    }));
+  }, [donationsData]);
 
   // Format date
   const formatDate = (dateInput: any) => {
@@ -291,7 +292,23 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
           >
             <div className="bg-theme-surface rounded-2xl p-6 shadow-lg border border-theme">
               <h2 className="text-2xl font-bold text-theme-primary mb-6">Recent Donors</h2>
-              {recentDonors.length > 0 ? (
+              {donationsLoading ? (
+                <div className="space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start space-x-4 p-4 border border-theme rounded-lg animate-pulse"
+                    >
+                      <div className="w-10 h-10 bg-gray-300 rounded-full flex-shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-300 rounded w-1/4"></div>
+                        <div className="h-3 bg-gray-300 rounded w-1/3"></div>
+                      </div>
+                      <div className="h-6 bg-gray-300 rounded w-16"></div>
+                    </div>
+                  ))}
+                </div>
+              ) : recentDonors.length > 0 ? (
                 <div className="space-y-4">
                   {recentDonors.map((donor, index) => (
                     <motion.div

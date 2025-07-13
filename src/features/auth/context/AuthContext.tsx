@@ -126,8 +126,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'AUTH_LOGOUT' });
     };
 
+    const handleCompleteLogout = () => {
+      // Clear React Query cache
+      import('../../../lib/queryClient').then(({ clearAllQueries }) => {
+        clearAllQueries();
+      });
+
+      // Dispatch logout action
+      dispatch({ type: 'AUTH_LOGOUT' });
+    };
+
     window.addEventListener('auth:logout', handleLogout);
-    return () => window.removeEventListener('auth:logout', handleLogout);
+    window.addEventListener('auth:complete-logout', handleCompleteLogout);
+
+    return () => {
+      window.removeEventListener('auth:logout', handleLogout);
+      window.removeEventListener('auth:complete-logout', handleCompleteLogout);
+    };
   }, []);
 
   const checkAuthStatus = async () => {
@@ -205,12 +220,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const logout = useCallback(async () => {
     try {
       await authService.logout();
-      // Tokens are already cleared in authService.logout
+      // All user data is already cleared in authService.logout
     } catch (error) {
-      // Even if logout fails on server, clear local state and tokens
+      // Even if logout fails on server, clear all local data
       console.error('Logout error:', error);
-      clearTokens();
+      authService.clearAllUserData();
     } finally {
+      // Clear React Query cache
+      const { clearAllQueries } = await import('../../../lib/queryClient');
+      clearAllQueries();
+
+      // Dispatch logout action
       dispatch({ type: 'AUTH_LOGOUT' });
     }
   }, []);

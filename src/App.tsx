@@ -9,6 +9,7 @@ import { useEffect } from 'react';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { AuthProvider } from './features/auth/context/AuthContext';
+import { ThemeProvider } from './theme';
 import queryClient from './lib/queryClient';
 import './lib/i18n'; // Initialize i18n
 
@@ -29,12 +30,21 @@ import CampaignDetailPage from './pages/CampaignDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
+// Donation Pages
+import DonationSuccess from './pages/donations/DonationSuccess';
+import DonationCancelled from './pages/donations/DonationCancelled';
+
 // User Pages
 import UserProfile from './pages/profile/UserProfile';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/AdminDashboard';
+import DonationManagement from './pages/admin/DonationManagement';
+import DonorManagement from './pages/admin/DonorManagement';
+import DonorDetail from './pages/admin/DonorDetail';
 import CampaignManagement from './pages/admin/CampaignManagement';
+import UserManagement from './pages/admin/UserManagement';
+import UserDetail from './pages/admin/UserDetail';
 
 // Component to handle legacy reset password URLs with query parameters
 const ResetPasswordRedirect = () => {
@@ -56,61 +66,107 @@ const ResetPasswordRedirect = () => {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <Router>
-          <RouteChangeLoader />
-          <Routes>
-            {/* Public routes - No authentication required */}
-            <Route path="/" element={<HomePage />} />
-            <Route path="/campaigns" element={<CampaignsPage />} />
-            <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
+      <ThemeProvider>
+        <AuthProvider>
+          <Router>
+            <RouteChangeLoader />
+            <Routes>
+              {/* Public routes - No authentication required */}
+              <Route path="/" element={<HomePage />} />
+              <Route path="/campaigns" element={<CampaignsPage />} />
+              <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
 
-            {/* Auth routes */}
-            <Route path="/auth/login" element={<LoginPage />} />
-            <Route path="/auth/register" element={<RegisterPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordRedirect />} />
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+              {/* Donation routes - Public */}
+              <Route path="/donation-success" element={<DonationSuccess />} />
+              <Route path="/donation-cancelled" element={<DonationCancelled />} />
 
-            {/* Protected routes - Authentication required */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <UserProfile />
-                </ProtectedRoute>
-              }
-            />
+              {/* Auth routes */}
+              <Route path="/auth/login" element={<LoginPage />} />
+              <Route path="/auth/register" element={<RegisterPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordRedirect />} />
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-            {/* Admin routes - Admin role required */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/campaigns"
-              element={
-                <ProtectedRoute requiredRole="admin">
-                  <CampaignManagement />
-                </ProtectedRoute>
-              }
-            />
+              {/* Protected routes - Authentication required */}
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute requiredRole="user">
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Error pages */}
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
+              {/* Admin routes - Admin role required */}
+              <Route
+                path="/admin/dashboard"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <AdminDashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/campaigns"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <CampaignManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/donations"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <DonationManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/donors"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <DonorManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/donors/:donorId"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <DonorDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <UserManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users/:userId"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <UserDetail />
+                  </ProtectedRoute>
+                }
+              />
 
-            {/* Catch all route */}
-            <Route path="*" element={<NotFoundPage />} />
-          </Routes>
-        </Router>
-      </AuthProvider>
+              {/* Error pages */}
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
+
+              {/* Catch all route */}
+              <Route path="*" element={<NotFoundPage />} />
+            </Routes>
+          </Router>
+        </AuthProvider>
+      </ThemeProvider>
 
       {/* React Query DevTools (only in development) */}
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}

@@ -6,7 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { campaignApi } from '../lib/campaignApi';
 import { queryKeys } from '../lib/queryClient';
-import type { CampaignFilters, Campaign, CampaignStats } from '../types';
+import type { CampaignFilters } from '../types';
 
 // Hook for fetching campaigns with filters
 export const useCampaigns = (filters: CampaignFilters) => {
@@ -38,8 +38,6 @@ export const useCampaigns = (filters: CampaignFilters) => {
     refetchOnMount: false,
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
-    // Don't keep previous data for immediate updates
-    keepPreviousData: false,
   });
 };
 

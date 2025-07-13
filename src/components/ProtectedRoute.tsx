@@ -35,6 +35,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   // At this point, user is authenticated
   // Check role-based access if a specific role is required
   if (requiredRole && (!user || user.role !== requiredRole)) {
+    if (!user || user.role === 'admin') {
+      return <Navigate to="/admin/dashboard" replace />;
+    }
     // Redirect to unauthorized page
     return <Navigate to="/unauthorized" replace />;
   }

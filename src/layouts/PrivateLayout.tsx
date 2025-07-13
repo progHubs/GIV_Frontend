@@ -20,8 +20,12 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
   const handleLogout = async () => {
     try {
       await logout();
+      // Force a complete page reload to ensure all state is cleared
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, force reload to clear state
+      window.location.href = '/login';
     }
   };
 
@@ -43,9 +47,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
                 <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
                   <span className="text-white font-bold text-lg">G</span>
                 </div>
-                <span className="text-xl font-bold text-gray-900">
-                  {t('app.name')}
-                </span>
+                <span className="text-xl font-bold text-gray-900">{t('app.name')}</span>
               </Link>
             </div>
 
@@ -54,20 +56,18 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
               <Link
                 to="/dashboard"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/dashboard') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/dashboard') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.dashboard')}
               </Link>
-              
+
               {/* Public pages access */}
               <Link
                 to="/"
                 className={`text-sm font-medium transition-colors ${
                   isActivePath('/') && location.pathname === '/'
-                    ? 'text-blue-600' 
+                    ? 'text-blue-600'
                     : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
@@ -76,9 +76,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
               <Link
                 to="/campaigns"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/campaigns') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/campaigns') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.campaigns')}
@@ -86,9 +84,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
               <Link
                 to="/events"
                 className={`text-sm font-medium transition-colors ${
-                  isActivePath('/events') 
-                    ? 'text-blue-600' 
-                    : 'text-gray-700 hover:text-blue-600'
+                  isActivePath('/events') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                 }`}
               >
                 {t('navigation.events')}
@@ -99,9 +95,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
                 <Link
                   to="/admin"
                   className={`text-sm font-medium transition-colors ${
-                    isActivePath('/admin') 
-                      ? 'text-blue-600' 
-                      : 'text-gray-700 hover:text-blue-600'
+                    isActivePath('/admin') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                   }`}
                 >
                   Admin
@@ -124,9 +118,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
                 <Link
                   to="/profile"
                   className={`text-sm font-medium transition-colors ${
-                    isActivePath('/profile') 
-                      ? 'text-blue-600' 
-                      : 'text-gray-700 hover:text-blue-600'
+                    isActivePath('/profile') ? 'text-blue-600' : 'text-gray-700 hover:text-blue-600'
                   }`}
                 >
                   {user?.full_name}
@@ -152,7 +144,7 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
               <h2 className="text-lg font-semibold text-gray-900 mb-4">
                 {location.pathname.startsWith('/admin') ? 'Admin Panel' : t('navigation.dashboard')}
               </h2>
-              
+
               <nav className="space-y-2">
                 {location.pathname.startsWith('/dashboard') && (
                   <>
@@ -238,15 +230,11 @@ const PrivateLayout: React.FC<PrivateLayoutProps> = ({ children }) => {
           </aside>
 
           {/* Main content */}
-          <main className="flex-1 p-6">
-            {children}
-          </main>
+          <main className="flex-1 p-6">{children}</main>
         </div>
       ) : (
         /* Full width content for non-dashboard pages */
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
       )}
     </div>
   );

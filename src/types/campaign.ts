@@ -36,6 +36,7 @@ export interface Campaign extends BaseEntity {
   end_date: string;
   is_active: boolean;
   is_featured: boolean;
+  is_completed: boolean;
   category: CampaignCategory;
   progress_bar_color: string;
   image_url?: string;
@@ -68,6 +69,7 @@ export interface CampaignFormData {
   language?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  is_completed?: boolean;
 }
 
 // Campaign Filters
@@ -77,6 +79,7 @@ export interface CampaignFilters {
   language?: string;
   is_active?: boolean;
   is_featured?: boolean;
+  is_completed?: boolean;
   start_date?: string;
   end_date?: string;
   page?: number;
@@ -90,6 +93,7 @@ export interface CampaignStats {
   total_campaigns: number;
   active_campaigns: number;
   featured_campaigns: number;
+  completed_campaigns: number;
   total_goal_amount: string;
   total_current_amount: string;
   overall_progress_percentage: number;

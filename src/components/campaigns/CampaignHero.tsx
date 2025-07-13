@@ -6,12 +6,14 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import type { CampaignStats } from '../../types';
+import CampaignStatsSkeleton from './CampaignStatsSkeleton';
 
 interface CampaignHeroProps {
   stats?: CampaignStats | null;
+  loading?: boolean;
 }
 
-const CampaignHero: React.FC<CampaignHeroProps> = ({ stats }) => {
+const CampaignHero: React.FC<CampaignHeroProps> = ({ stats, loading = false }) => {
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -106,8 +108,14 @@ const CampaignHero: React.FC<CampaignHeroProps> = ({ stats }) => {
             </motion.div>
           </motion.div>
 
-          {/* Statistics */}
-          {stats && (
+          {/* Statistics or Skeleton */}
+          {loading && (
+            <motion.div variants={itemVariants}>
+              <CampaignStatsSkeleton />
+            </motion.div>
+          )}
+
+          {!loading && stats && (
             <motion.div
               variants={itemVariants}
               className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto"

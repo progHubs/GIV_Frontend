@@ -50,4 +50,21 @@ export const queryKeys = {
   },
 } as const;
 
+// Utility function to clear all cached data
+export const clearAllQueries = () => {
+  queryClient.clear();
+  queryClient.invalidateQueries();
+  queryClient.removeQueries();
+};
+
+// Utility function to clear user-specific queries
+export const clearUserQueries = () => {
+  queryClient.removeQueries({ queryKey: ['user'] });
+  queryClient.removeQueries({ queryKey: ['profile'] });
+  queryClient.removeQueries({ queryKey: ['donations'] });
+  queryClient.removeQueries({ queryKey: ['donor'] });
+  queryClient.removeQueries({ queryKey: ['auth'] });
+};
+
+// Single default export
 export default queryClient;

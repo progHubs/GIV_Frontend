@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import type { Campaign, CampaignFilters } from '../../types';
+import type { Campaign } from '../../types';
 
 interface CampaignManagementTableProps {
   campaigns: Campaign[];
@@ -13,11 +13,10 @@ interface CampaignManagementTableProps {
   error: string | null;
   currentPage: number;
   totalPages: number;
-  filters: CampaignFilters;
-  onFiltersChange: (filters: Partial<CampaignFilters>) => void;
   onEdit: (campaign: Campaign) => void;
   onDelete: (id: string) => Promise<void>;
   onRetry: () => void;
+  onPageChange: (page: number) => void;
 }
 
 const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
@@ -26,20 +25,13 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
   error,
   currentPage,
   totalPages,
-  filters,
-  onFiltersChange,
   onEdit,
   onDelete,
   onRetry,
+  onPageChange,
 }) => {
-  const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
-
-  // Sync local search state with filters
-  useEffect(() => {
-    setSearchQuery(filters.search || '');
-  }, [filters.search]);
 
   // Track initial load state
   useEffect(() => {
@@ -47,26 +39,6 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
       setIsInitialLoad(false);
     }
   }, [loading, campaigns.length]);
-
-  // Debounced search handler
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      // Only update if search query actually changed and is different from current filter
-      const currentSearch = filters.search || '';
-      const newSearch = searchQuery.trim();
-
-      // Don't trigger if both are empty or the same
-      if (newSearch !== currentSearch && !(newSearch === '' && currentSearch === '')) {
-        onFiltersChange({ search: newSearch || undefined, page: 1 });
-      }
-    }, 300); // Reduced debounce time for better UX
-
-    return () => clearTimeout(timer);
-  }, [searchQuery, filters.search, onFiltersChange]);
-
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-  };
 
   const handleDelete = async (id: string) => {
     try {
@@ -105,19 +77,6 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
       Deleting...
     </div>
   );
-
-  const handleSort = (sortBy: string) => {
-    const sortOrder = filters.sortBy === sortBy && filters.sortOrder === 'asc' ? 'desc' : 'asc';
-    onFiltersChange({
-      sortBy,
-      sortOrder,
-      page: 1,
-    });
-  };
-
-  const handlePageChange = (page: number) => {
-    onFiltersChange({ page });
-  };
 
   const formatCurrency = (amount: string) => {
     return new Intl.NumberFormat('en-US', {
@@ -174,6 +133,14 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
   };
 
   const getStatusBadge = (campaign: Campaign) => {
+    if (campaign.is_completed) {
+      return (
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+          Completed
+        </span>
+      );
+    }
+
     if (!campaign.is_active) {
       return (
         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-900/20 dark:text-gray-400">
@@ -261,56 +228,6 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
 
   return (
     <div className="bg-theme-surface rounded-2xl shadow-lg border border-theme overflow-hidden">
-      {/* Header with Search */}
-      <div className="p-6 border-b border-theme">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <h2 className="text-xl font-semibold text-theme-primary">Campaigns</h2>
-
-          <div className="relative">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              {loading && !isInitialLoad ? (
-                <svg className="h-5 w-5 text-blue-500 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-              ) : (
-                <svg
-                  className="h-5 w-5 text-theme-muted"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg>
-              )}
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={e => handleSearch(e.target.value)}
-              placeholder="Search campaigns..."
-              className="pl-10 pr-4 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary placeholder-theme-muted focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
-      </div>
-
       {/* Table */}
       <div
         className={`overflow-x-auto transition-opacity duration-200 ${loading && !isInitialLoad ? 'opacity-70' : 'opacity-100'}`}
@@ -319,55 +236,16 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
           <thead className="bg-theme-background">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort('title')}
-                  className="flex items-center space-x-1 hover:text-theme-primary"
-                >
-                  <span>Campaign</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
-                </button>
+                Campaign
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
                 Category
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort('goal_amount')}
-                  className="flex items-center space-x-1 hover:text-theme-primary"
-                >
-                  <span>Goal</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
-                </button>
+                Goal
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort('current_amount')}
-                  className="flex items-center space-x-1 hover:text-theme-primary"
-                >
-                  <span>Raised</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
-                </button>
+                Raised
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
                 Progress
@@ -376,36 +254,10 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
                 Status
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort('end_date')}
-                  className="flex items-center space-x-1 hover:text-theme-primary"
-                >
-                  <span>End Date</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
-                </button>
+                End Date
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
-                <button
-                  onClick={() => handleSort('created_at')}
-                  className="flex items-center space-x-1 hover:text-theme-primary"
-                >
-                  <span>Created</span>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
-                    />
-                  </svg>
-                </button>
+                Created
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-theme-muted uppercase tracking-wider">
                 Actions
@@ -517,14 +369,14 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
             </div>
             <div className="flex items-center space-x-2">
               <button
-                onClick={() => handlePageChange(currentPage - 1)}
+                onClick={() => onPageChange(currentPage - 1)}
                 disabled={currentPage === 1}
                 className="px-3 py-1 text-sm border border-theme rounded hover:bg-theme-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 hover:scale-105 active:scale-95"
               >
                 Previous
               </button>
               <button
-                onClick={() => handlePageChange(currentPage + 1)}
+                onClick={() => onPageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
                 className="px-3 py-1 text-sm border border-theme rounded hover:bg-theme-background disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-150 hover:scale-105 active:scale-95"
               >

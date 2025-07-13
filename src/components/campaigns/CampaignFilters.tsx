@@ -77,18 +77,19 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
     });
   };
 
-  const handleStatusFilter = (status: 'active' | 'featured' | 'all') => {
+  const handleStatusFilter = (status: 'featured' | 'all') => {
     const updates: Partial<CampaignFiltersType> = { page: 1 };
 
-    if (status === 'active') {
-      updates.is_active = true;
-      updates.is_featured = undefined;
-    } else if (status === 'featured') {
+    if (status === 'featured') {
       updates.is_featured = true;
-      updates.is_active = undefined;
+      // Keep the default active and non-completed filters
+      updates.is_active = true;
+      updates.is_completed = false;
     } else {
-      updates.is_active = undefined;
       updates.is_featured = undefined;
+      // Keep the default active and non-completed filters
+      updates.is_active = true;
+      updates.is_completed = false;
     }
 
     onFiltersChange(updates);
@@ -99,8 +100,9 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
     onFiltersChange({
       search: undefined,
       category: undefined,
-      is_active: undefined,
+      is_active: true, // Keep default active filter
       is_featured: undefined,
+      is_completed: false, // Keep default non-completed filter
       sortBy: 'created_at',
       sortOrder: 'desc',
       page: 1,
@@ -108,12 +110,14 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
   };
 
   const hasActiveFilters = !!(
-    filters.search ||
-    filters.category ||
-    filters.is_active ||
-    filters.is_featured ||
-    filters.sortBy !== 'created_at' ||
-    filters.sortOrder !== 'desc'
+    (
+      filters.search ||
+      filters.category ||
+      filters.is_featured ||
+      filters.sortBy !== 'created_at' ||
+      filters.sortOrder !== 'desc'
+    )
+    // Don't consider is_active and is_completed as "active filters" since they're defaults
   );
 
   return (
@@ -189,7 +193,7 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
           whileTap={{ scale: 0.98 }}
           onClick={() => handleStatusFilter('all')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-            !filters.is_active && !filters.is_featured
+            !filters.is_featured
               ? 'bg-blue-500 text-white shadow-lg'
               : 'bg-theme-surface text-theme-primary border border-theme hover:bg-theme-background'
           }`}
@@ -208,19 +212,6 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
           }`}
         >
           Featured
-        </motion.button>
-
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => handleStatusFilter('active')}
-          className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-            filters.is_active
-              ? 'bg-green-500 text-white shadow-lg'
-              : 'bg-theme-surface text-theme-primary border border-theme hover:bg-theme-background'
-          }`}
-        >
-          Active
         </motion.button>
       </div>
 

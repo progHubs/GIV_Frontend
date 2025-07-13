@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../common/ThemeToggle';
 import { useAuth } from '../../hooks/useAuth';
@@ -15,7 +15,7 @@ const ModernNavigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
-  const navigate = useNavigate();
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll effect
@@ -48,9 +48,13 @@ const ModernNavigation: React.FC = () => {
       setIsLoggingOut(true);
       setIsUserDropdownOpen(false); // Close dropdown
       await logout();
-      navigate('/login');
+
+      // Force a complete page reload to ensure all state is cleared
+      window.location.href = '/login';
     } catch (error) {
       console.error('Logout error:', error);
+      // Even if logout fails, force reload to clear state
+      window.location.href = '/login';
     } finally {
       setIsLoggingOut(false);
     }

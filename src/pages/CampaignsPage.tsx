@@ -20,12 +20,15 @@ import type { CampaignFilters as CampaignFiltersType } from '../types';
 
 const CampaignsPage: React.FC = () => {
   // Local state for filters (consistent with admin page)
+  // Default to show only active and non-completed campaigns
   const [filters, setFilters] = useState<CampaignFiltersType>({
     page: 1,
     limit: 10,
     sortBy: 'created_at',
     sortOrder: 'desc',
     language: 'en',
+    is_active: true,
+    is_completed: false,
   });
 
   // Use React Query hooks
@@ -34,7 +37,7 @@ const CampaignsPage: React.FC = () => {
     isLoading: campaignsLoading,
     error: campaignsError,
   } = useCampaigns(filters);
-  const { data: stats } = useCampaignStats();
+  const { data: stats, isLoading: statsLoading } = useCampaignStats();
 
   // Handle filter changes (consistent with admin page)
   const updateFilters = useCallback((newFilters: Partial<CampaignFiltersType>) => {
@@ -97,7 +100,7 @@ const CampaignsPage: React.FC = () => {
         >
           {/* Hero Section */}
           <motion.div variants={itemVariants}>
-            <CampaignHero stats={stats} />
+            <CampaignHero stats={stats} loading={statsLoading} />
           </motion.div>
 
           {/* Campaign Statistics */}
