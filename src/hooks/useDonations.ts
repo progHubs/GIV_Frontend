@@ -39,10 +39,14 @@ export const donationQueryKeys = {
 /**
  * Hook for fetching donations with filters
  */
-export const useDonations = (filters: DonationFilters = {}) => {
+export const useDonations = (
+  filters: DonationFilters = {},
+  options: { enabled?: boolean } = {}
+) => {
   return useQuery({
     queryKey: donationQueryKeys.list(filters),
     queryFn: () => donationApi.getDonations(filters),
+    enabled: options.enabled !== false,
     select: data => {
       if (data.success) {
         return data;
@@ -361,5 +365,94 @@ export const useRecalculateSingleTier = () => {
       queryClient.invalidateQueries({ queryKey: donationQueryKeys.donors.detail(donorId) });
       queryClient.invalidateQueries({ queryKey: ['tierStats'] });
     },
+  });
+};
+
+// ==================== ADVANCED FILTERING HOOKS ====================
+
+/**
+ * Hook for fetching filter options
+ */
+export const useDonationFilterOptions = () => {
+  return useQuery({
+    queryKey: ['donation-filter-options'],
+    queryFn: () => donationApi.getFilterOptions(),
+    select: data => (data.success ? data.data : null),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+/**
+ * Hook for advanced donation filtering
+ */
+export const useAdvancedDonationFiltering = (
+  filters: any,
+  pagination: any = {},
+  options: { enabled?: boolean } = {}
+) => {
+  return useQuery({
+    queryKey: ['donations-advanced', filters, pagination],
+    queryFn: () => donationApi.getAdvancedFilteredDonations(filters, pagination),
+    select: data => (data.success ? data : { success: true, data: [], pagination: {} }),
+    enabled: options.enabled !== false && Object.keys(filters).length > 0,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    keepPreviousData: true, // For smooth pagination
+  });
+};
+
+/**
+ * Hook for donation statistics with filters
+ */
+export const useDonationStatistics = (filters: any) => {
+  return useQuery({
+    queryKey: ['donation-statistics', filters],
+    queryFn: () => donationApi.getDonationStatistics(filters),
+    select: data => {
+      if (!data.success || !data.data) return null;
+
+      const stats = data.data;
+      // Map backend response to frontend expected format
+      return {
+        totalDonations: stats.total_donations || 0,
+        totalAmount: `$${(stats.total_amount || 0).toLocaleString()}`,
+        averageDonation: `$${(stats.average_amount || 0).toLocaleString()}`,
+        uniqueDonors: stats.unique_donors || 0,
+
+        // Payment method breakdown
+        paymentMethods:
+          stats.payment_method_breakdown?.map((method: any) => ({
+            method: method.payment_method,
+            count: method._count.id,
+            amount: method._sum.amount,
+          })) || [],
+
+        // Donation type breakdown
+        donationTypes:
+          stats.donation_type_breakdown?.map((type: any) => ({
+            type: type.donation_type,
+            count: type._count.id,
+            amount: type._sum.amount,
+          })) || [],
+
+        // Currency breakdown
+        currencies:
+          stats.currency_breakdown?.map((currency: any) => ({
+            currency: currency.currency,
+            count: currency._count.id,
+            amount: currency._sum.amount,
+          })) || [],
+
+        // Campaign breakdown
+        campaigns:
+          stats.campaign_breakdown?.map((campaign: any) => ({
+            campaign_id: campaign.campaign_id,
+            count: campaign._count.id,
+            amount: campaign._sum.amount,
+          })) || [],
+      };
+    },
+    enabled: Object.keys(filters).length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
   });
 };

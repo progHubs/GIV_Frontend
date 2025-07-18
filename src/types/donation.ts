@@ -85,14 +85,164 @@ export interface DonationFilters {
   payment_method?: PaymentMethod;
   currency?: string;
   is_anonymous?: boolean;
-  amount_min?: number;
-  amount_max?: number;
-  donated_after?: string;
-  donated_before?: string;
+
+  // Amount range filters
+  min_amount?: number;
+  max_amount?: number;
+  amount_min?: number; // Keep for backward compatibility
+  amount_max?: number; // Keep for backward compatibility
+
+  // Date filters
+  date_from?: string;
+  date_to?: string;
+  donated_after?: string; // Keep for backward compatibility
+  donated_before?: string; // Keep for backward compatibility
+
+  // Period filter
+  period?:
+    | 'today'
+    | 'yesterday'
+    | 'last_7_days'
+    | 'last_30_days'
+    | 'this_month'
+    | 'last_month'
+    | 'this_year'
+    | 'last_year';
+
+  // Pagination and sorting
   page?: number;
   limit?: number;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+}
+
+// Advanced Donation Filters (for enhanced filtering)
+export interface AdvancedDonationFilters {
+  // Period-based filtering
+  period?:
+    | 'today'
+    | 'yesterday'
+    | 'last_7_days'
+    | 'last_30_days'
+    | 'this_month'
+    | 'last_month'
+    | 'this_year'
+    | 'last_year';
+  date_from?: string;
+  date_to?: string;
+
+  // Amount filtering
+  min_amount?: number;
+  max_amount?: number;
+  amount_filters?: AmountFilter[];
+
+  // Category filtering
+  currencies?: string[];
+  payment_methods?: string[];
+  donation_types?: ('one_time' | 'recurring' | 'in_kind')[];
+  payment_statuses?: ('pending' | 'completed' | 'failed')[];
+
+  // Campaign filtering
+  campaign_ids?: string[];
+  campaign_type?: 'general' | 'campaign_specific';
+
+  // Donor filtering
+  anonymity_filter?: 'anonymous' | 'non_anonymous';
+  donor_tiers?: ('bronze' | 'silver' | 'gold' | 'platinum')[];
+  membership_statuses?: ('active' | 'canceled' | 'past_due' | 'trialing')[];
+
+  // Search
+  search?: string;
+}
+
+export interface AmountFilter {
+  currency: string;
+  min_amount?: number;
+  max_amount?: number;
+}
+
+// Statistics and analytics interfaces
+export interface DonationStatisticsFilters {
+  period?: string;
+  date_from?: string;
+  date_to?: string;
+  currencies?: string[];
+  campaign_ids?: string[];
+}
+
+export interface DonationStatistics {
+  total_donations: number;
+  total_amount: number;
+  currency: string;
+  unique_donors: number;
+  average_donation: number;
+  period_comparison?: {
+    previous_period_total: number;
+    percentage_change: number;
+  };
+}
+
+export interface DonationAnalyticsFilters {
+  period?: string;
+  currency?: string;
+  campaign_ids?: string[];
+}
+
+export interface DonationAnalytics {
+  daily_totals: DailyDonationTotal[];
+  top_campaigns: CampaignDonationSummary[];
+  donor_distribution: DonorTierDistribution[];
+  payment_method_breakdown: PaymentMethodBreakdown[];
+}
+
+export interface DailyDonationTotal {
+  date: string;
+  total_donations: number;
+  total_amount: number;
+  unique_donors: number;
+}
+
+export interface CampaignDonationSummary {
+  campaign_id: string;
+  campaign_title: string;
+  total_amount: number;
+  donation_count: number;
+}
+
+export interface DonorTierDistribution {
+  tier: string;
+  count: number;
+  percentage: number;
+}
+
+export interface PaymentMethodBreakdown {
+  payment_method: string;
+  count: number;
+  total_amount: number;
+  percentage: number;
+}
+
+// Saved filters interfaces
+export interface SavedFilter {
+  id: string;
+  user_id: string;
+  filter_name: string;
+  filter_criteria: AdvancedDonationFilters;
+  is_default: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SaveFilterRequest {
+  filter_name: string;
+  filter_criteria: AdvancedDonationFilters;
+  is_default?: boolean;
+}
+
+export interface UpdateFilterRequest {
+  filter_name?: string;
+  filter_criteria?: AdvancedDonationFilters;
+  is_default?: boolean;
 }
 
 // Donation Statistics (admin dashboard)
@@ -226,6 +376,42 @@ export interface DonationStatsResponse {
 export interface DonorStatsResponse {
   success: boolean;
   data: DonorStats;
+}
+
+// Advanced filtering API response types
+export interface FilterOptionsResponse {
+  success: boolean;
+  data: {
+    periods: string[];
+    currencies: string[];
+    payment_methods: string[];
+    donation_types: string[];
+    payment_statuses: string[];
+    campaigns: { id: string; title: string }[];
+    donor_tiers: string[];
+    membership_statuses: string[];
+  };
+}
+
+export interface DonationStatisticsResponse {
+  success: boolean;
+  data: DonationStatistics;
+}
+
+export interface DonationAnalyticsResponse {
+  success: boolean;
+  data: DonationAnalytics;
+}
+
+export interface SavedFiltersResponse {
+  success: boolean;
+  data: SavedFilter[];
+}
+
+export interface SaveFilterResponse {
+  success: boolean;
+  data: SavedFilter;
+  message: string;
 }
 
 // Component Props Types

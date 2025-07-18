@@ -359,6 +359,60 @@ export const donationApi = {
   recalculateSingleTier: async (donorId: string) => {
     return api.post(DONATION_ENDPOINTS.recalculateSingleTier(donorId));
   },
+
+  // ==================== ADVANCED FILTERING ====================
+
+  /**
+   * Get filter options for advanced filtering
+   * GET /donations/filter-options
+   */
+  getFilterOptions: async () => {
+    return api.get(`${DONATION_ENDPOINTS.donations}/filter-options`);
+  },
+
+  /**
+   * Get donations with advanced filtering
+   * GET /donations/advanced-filter
+   */
+  getAdvancedFilteredDonations: async (filters: any, pagination: any = {}) => {
+    const params = buildQueryParams({ ...filters, ...pagination });
+    const url = params
+      ? `${DONATION_ENDPOINTS.donations}/advanced-filter?${params}`
+      : `${DONATION_ENDPOINTS.donations}/advanced-filter`;
+
+    return api.get(url);
+  },
+
+  /**
+   * Get donation statistics with filters
+   * GET /donations/statistics
+   */
+  getDonationStatistics: async (filters: any) => {
+    const params = buildQueryParams(filters);
+    const url = params
+      ? `${DONATION_ENDPOINTS.donations}/statistics?${params}`
+      : `${DONATION_ENDPOINTS.donations}/statistics`;
+    return api.get(url);
+  },
+};
+
+// Utility function to build query parameters
+const buildQueryParams = (params: Record<string, any>): string => {
+  const searchParams = new URLSearchParams();
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      if (Array.isArray(value)) {
+        if (value.length > 0) {
+          searchParams.append(key, value.join(','));
+        }
+      } else {
+        searchParams.append(key, value.toString());
+      }
+    }
+  });
+
+  return searchParams.toString();
 };
 
 export default donationApi;

@@ -21,6 +21,16 @@ const ENDPOINTS = {
   activeCampaigns: '/campaigns/active',
   campaignStats: '/campaigns/stats',
   searchCampaigns: '/campaigns/search',
+  // Volunteer endpoints
+  campaignVolunteers: (id: string) => `/campaigns/${id}/volunteers`,
+  applyVolunteer: (id: string) => `/campaigns/${id}/volunteers/apply`,
+  updateVolunteerStatus: (campaignId: string, userId: string) =>
+    `/campaigns/${campaignId}/volunteers/${userId}/status`,
+  logVolunteerHours: (volunteerId: string) => `/volunteers/${volunteerId}/hours`,
+  volunteerStats: (userId?: string) =>
+    userId ? `/volunteers/stats/${userId}` : '/volunteers/stats',
+  userVolunteerCampaigns: '/volunteers/my-campaigns',
+  filterOptions: '/campaigns/filter-options',
 } as const;
 
 // Campaign API Response Types
@@ -50,7 +60,7 @@ export const campaignApi = {
   // Get all campaigns with filtering and pagination
   getCampaigns: async (filters?: CampaignFilters): Promise<CampaignsResponse> => {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -61,14 +71,14 @@ export const campaignApi = {
 
     const queryString = params.toString();
     const url = queryString ? `${ENDPOINTS.campaigns}?${queryString}` : ENDPOINTS.campaigns;
-    
+
     return api.get<CampaignsResponse>(url);
   },
 
   // Search campaigns
   searchCampaigns: async (query: string, filters?: CampaignFilters): Promise<CampaignsResponse> => {
     const params = new URLSearchParams({ q: query });
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -83,7 +93,7 @@ export const campaignApi = {
   // Get featured campaigns
   getFeaturedCampaigns: async (filters?: Partial<CampaignFilters>): Promise<CampaignsResponse> => {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -93,15 +103,17 @@ export const campaignApi = {
     }
 
     const queryString = params.toString();
-    const url = queryString ? `${ENDPOINTS.featuredCampaigns}?${queryString}` : ENDPOINTS.featuredCampaigns;
-    
+    const url = queryString
+      ? `${ENDPOINTS.featuredCampaigns}?${queryString}`
+      : ENDPOINTS.featuredCampaigns;
+
     return api.get<CampaignsResponse>(url);
   },
 
   // Get active campaigns
   getActiveCampaigns: async (filters?: Partial<CampaignFilters>): Promise<CampaignsResponse> => {
     const params = new URLSearchParams();
-    
+
     if (filters) {
       Object.entries(filters).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
@@ -111,8 +123,10 @@ export const campaignApi = {
     }
 
     const queryString = params.toString();
-    const url = queryString ? `${ENDPOINTS.activeCampaigns}?${queryString}` : ENDPOINTS.activeCampaigns;
-    
+    const url = queryString
+      ? `${ENDPOINTS.activeCampaigns}?${queryString}`
+      : ENDPOINTS.activeCampaigns;
+
     return api.get<CampaignsResponse>(url);
   },
 
@@ -131,6 +145,62 @@ export const campaignApi = {
     return api.get<CampaignTranslationsResponse>(ENDPOINTS.campaignTranslations(id));
   },
 
+  // ==================== VOLUNTEER ENDPOINTS ====================
+
+  // Apply to volunteer for a campaign
+  applyCampaignVolunteer: async (campaignId: string, applicationData: any) => {
+    return api.post(ENDPOINTS.applyVolunteer(campaignId), applicationData);
+  },
+
+  // Get campaign volunteers
+  getCampaignVolunteers: async (campaignId: string, filters: any = {}) => {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          if (value.length > 0) {
+            params.append(key, value.join(','));
+          }
+        } else {
+          params.append(key, String(value));
+        }
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `${ENDPOINTS.campaignVolunteers(campaignId)}?${queryString}`
+      : ENDPOINTS.campaignVolunteers(campaignId);
+
+    return api.get(url);
+  },
+
+  // Update volunteer status (admin only)
+  updateVolunteerStatus: async (campaignId: string, userId: string, statusData: any) => {
+    return api.put(ENDPOINTS.updateVolunteerStatus(campaignId, userId), statusData);
+  },
+
+  // Log volunteer hours
+  logVolunteerHours: async (campaignVolunteerId: string, hoursData: any) => {
+    return api.post(ENDPOINTS.logVolunteerHours(campaignVolunteerId), hoursData);
+  },
+
+  // Get volunteer statistics
+  getVolunteerStats: async (userId?: string) => {
+    return api.get(ENDPOINTS.volunteerStats(userId));
+  },
+
+  // Get user's volunteer campaigns
+  getUserVolunteerCampaigns: async () => {
+    return api.get(ENDPOINTS.userVolunteerCampaigns);
+  },
+
+  // Get campaign filter options
+  getCampaignFilterOptions: async () => {
+    return api.get(ENDPOINTS.filterOptions);
+  },
+
   // Admin-only endpoints
   admin: {
     // Create campaign
@@ -139,7 +209,10 @@ export const campaignApi = {
     },
 
     // Update campaign
-    updateCampaign: async (id: string, data: Partial<CampaignFormData>): Promise<CampaignResponse> => {
+    updateCampaign: async (
+      id: string,
+      data: Partial<CampaignFormData>
+    ): Promise<CampaignResponse> => {
       return api.put<CampaignResponse>(ENDPOINTS.campaignById(id), data);
     },
 

@@ -6,16 +6,27 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { useUserDonationHistory } from '../../hooks/useDonations';
+import { useUserDonationHistory, useAdvancedDonationFiltering } from '../../hooks/useDonations';
 import { useStripeUtils } from '../../hooks/useStripe';
 import DonationCard from './DonationCard';
+import AdvancedFilters from './AdvancedFilters';
+import SavedFiltersManager from './SavedFiltersManager';
+import type { AdvancedDonationFilters } from '../../types/donation';
 
 interface DonationHistoryProps {
   className?: string;
+  enableAdvancedFilters?: boolean;
+  allowExport?: boolean;
+  enableSavedFilters?: boolean;
 }
 
-const DonationHistory: React.FC<DonationHistoryProps> = ({ className = '' }) => {
-  const [filters, setFilters] = useState<{
+const DonationHistory: React.FC<DonationHistoryProps> = ({
+  className = '',
+  enableAdvancedFilters = false,
+  allowExport = false,
+  enableSavedFilters = false,
+}) => {
+  const [basicFilters, setBasicFilters] = useState<{
     page: number;
     limit: number;
     sortBy: string;
@@ -27,22 +38,66 @@ const DonationHistory: React.FC<DonationHistoryProps> = ({ className = '' }) => 
     sortOrder: 'desc',
   });
 
-  const { data: donationsData, isLoading, error } = useUserDonationHistory(filters);
+  const [advancedFilters, setAdvancedFilters] = useState<AdvancedDonationFilters>({});
+  const [showFilters, setShowFilters] = useState(false);
+
+  // Use advanced filtering if enabled, otherwise use basic history
+  const {
+    data: filteredDonations,
+    isLoading: isFilteredLoading,
+    error: filteredError,
+    refetch: refetchFiltered,
+  } = useAdvancedDonationFiltering(advancedFilters, { enabled: enableAdvancedFilters });
+
+  const {
+    data: donationsData,
+    isLoading: isBasicLoading,
+    error: basicError,
+  } = useUserDonationHistory(basicFilters, { enabled: !enableAdvancedFilters });
+
   const { formatCurrency } = useStripeUtils();
+
+  // Use appropriate data based on filtering mode
+  const currentData = enableAdvancedFilters ? filteredDonations : donationsData;
+  const isLoading = enableAdvancedFilters ? isFilteredLoading : isBasicLoading;
+  const error = enableAdvancedFilters ? filteredError : basicError;
 
   // Handle pagination
   const handlePageChange = (newPage: number) => {
-    setFilters(prev => ({ ...prev, page: newPage }));
+    if (enableAdvancedFilters) {
+      setAdvancedFilters(prev => ({ ...prev, page: newPage }));
+    } else {
+      setBasicFilters(prev => ({ ...prev, page: newPage }));
+    }
+  };
+
+  // Handle advanced filter changes
+  const handleAdvancedFilterChange = (filters: AdvancedDonationFilters) => {
+    setAdvancedFilters(filters);
+  };
+
+  // Handle clear filters
+  const handleClearFilters = () => {
+    setAdvancedFilters({});
+  };
+
+  // Toggle filters visibility
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
   };
 
   // Handle sort change
   const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-    setFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
+    if (enableAdvancedFilters) {
+      setAdvancedFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
+    } else {
+      setBasicFilters(prev => ({ ...prev, sortBy, sortOrder, page: 1 }));
+    }
   };
 
   // Calculate totals
-  const donations = donationsData?.data || [];
-  const pagination = (donationsData?.pagination || {
+  const donations = currentData?.data || [];
+  const pagination = (currentData?.pagination || {
     page: 1,
     limit: 10,
     totalCount: 0,
@@ -146,29 +201,70 @@ const DonationHistory: React.FC<DonationHistoryProps> = ({ className = '' }) => 
           </p>
         </div>
 
-        {/* Quick Stats */}
-        <div className="flex gap-4 text-sm">
-          <div className="text-center">
-            <div className="font-semibold text-theme-primary">{formatCurrency(totalDonated)}</div>
-            <div className="text-theme-muted">Total Donated</div>
-          </div>
-          <div className="text-center">
-            <div className="font-semibold text-theme-primary">{completedDonations.length}</div>
-            <div className="text-theme-muted">Completed</div>
-          </div>
-          <div className="text-center">
-            <div className="font-semibold text-theme-primary">{recurringDonations.length}</div>
-            <div className="text-theme-muted">Recurring</div>
+        <div className="flex items-center gap-4">
+          {/* Advanced Filters Toggle */}
+          {enableAdvancedFilters && (
+            <button
+              onClick={toggleFilters}
+              className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"
+                />
+              </svg>
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+          )}
+
+          {/* Quick Stats */}
+          <div className="flex gap-4 text-sm">
+            <div className="text-center">
+              <div className="font-semibold text-theme-primary">{formatCurrency(totalDonated)}</div>
+              <div className="text-theme-muted">Total Donated</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-theme-primary">{completedDonations.length}</div>
+              <div className="text-theme-muted">Completed</div>
+            </div>
+            <div className="text-center">
+              <div className="font-semibold text-theme-primary">{recurringDonations.length}</div>
+              <div className="text-theme-muted">Recurring</div>
+            </div>
           </div>
         </div>
       </div>
+
+      {/* Advanced Filters */}
+      {enableAdvancedFilters && showFilters && (
+        <AdvancedFilters
+          initialFilters={advancedFilters}
+          onFilterChange={handleAdvancedFilterChange}
+          onClearFilters={handleClearFilters}
+          showResultCount={true}
+          resultCount={pagination.totalCount}
+          className="mb-6"
+        />
+      )}
+
+      {/* Saved Filters Manager */}
+      {enableSavedFilters && (
+        <SavedFiltersManager
+          currentFilters={advancedFilters}
+          onApplyFilter={handleAdvancedFilterChange}
+          className="mb-6"
+        />
+      )}
 
       {/* Sort Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-theme-muted">Sort by:</span>
           <select
-            value={`${filters.sortBy}-${filters.sortOrder}`}
+            value={`${enableAdvancedFilters ? advancedFilters.sortBy || 'donated_at' : basicFilters.sortBy}-${enableAdvancedFilters ? advancedFilters.sortOrder || 'desc' : basicFilters.sortOrder}`}
             onChange={e => {
               const [sortBy, sortOrder] = e.target.value.split('-');
               handleSortChange(sortBy, sortOrder as 'asc' | 'desc');

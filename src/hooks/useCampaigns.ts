@@ -102,3 +102,76 @@ export const useDeleteCampaign = () => {
     },
   });
 };
+
+// ==================== VOLUNTEER HOOKS ====================
+
+/**
+ * Hook for applying to volunteer for a campaign
+ */
+export const useApplyCampaignVolunteer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ campaignId, applicationData }: { campaignId: string; applicationData: any }) =>
+      campaignApi.applyCampaignVolunteer(campaignId, applicationData),
+    onSuccess: (_, variables) => {
+      // Invalidate campaign volunteers
+      queryClient.invalidateQueries({
+        queryKey: ['campaigns', variables.campaignId, 'volunteers'],
+      });
+      // Invalidate user's volunteer campaigns
+      queryClient.invalidateQueries({ queryKey: ['volunteer', 'userCampaigns'] });
+    },
+  });
+};
+
+/**
+ * Hook for getting campaign volunteers
+ */
+export const useCampaignVolunteers = (campaignId: string, filters: any = {}) => {
+  return useQuery({
+    queryKey: ['campaigns', campaignId, 'volunteers', filters],
+    queryFn: () => campaignApi.getCampaignVolunteers(campaignId, filters),
+    select: data => (data.success ? data : { success: true, data: [], pagination: {} }),
+    enabled: !!campaignId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    keepPreviousData: true,
+  });
+};
+
+/**
+ * Hook for getting campaign filter options
+ */
+export const useCampaignFilterOptions = () => {
+  return useQuery({
+    queryKey: ['campaign-filter-options'],
+    queryFn: () => campaignApi.getCampaignFilterOptions(),
+    select: data => (data.success ? data.data : null),
+    staleTime: 10 * 60 * 1000, // 10 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+  });
+};
+
+/**
+ * Hook for getting user's volunteer campaigns
+ */
+export const useUserVolunteerCampaigns = () => {
+  return useQuery({
+    queryKey: ['volunteer', 'userCampaigns'],
+    queryFn: () => campaignApi.getUserVolunteerCampaigns(),
+    select: data => (data.success ? data.data : []),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+/**
+ * Hook for getting volunteer statistics
+ */
+export const useVolunteerStats = (userId?: string) => {
+  return useQuery({
+    queryKey: ['volunteer', 'stats', userId],
+    queryFn: () => campaignApi.getVolunteerStats(userId),
+    select: data => (data.success ? data.data : null),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};

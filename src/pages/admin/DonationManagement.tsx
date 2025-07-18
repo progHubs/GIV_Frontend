@@ -6,12 +6,13 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { DonationCard } from '../../components/donations';
+import { DonationCard, AdvancedFilters } from '../../components/donations';
 import {
   useDonations,
   useDonationStats,
   useUpdateDonationStatus,
   useSearchDonations,
+  useAdvancedDonationFiltering,
 } from '../../hooks/useDonations';
 import { useStripeUtils } from '../../hooks/useStripe';
 import type { DonationFilters, Donation } from '../../types/donation';
@@ -29,8 +30,85 @@ const DonationManagement: React.FC = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [showFilters, setShowFilters] = useState(true);
 
-  // Hooks
-  const { data: donationsData, isLoading, error } = useDonations(filters);
+  // Phase 2 state
+  const [activeTab, setActiveTab] = useState<'donations'>('donations');
+
+  // Check if any filters are applied (excluding pagination and sorting)
+  const hasAnyFilters = React.useMemo(() => {
+    const filterKeys = Object.keys(filters).filter(
+      key => !['page', 'limit', 'sortBy', 'sortOrder'].includes(key)
+    );
+    return filterKeys.length > 0 || searchQuery;
+  }, [filters, searchQuery]);
+
+  // Map frontend filters to advanced filtering format
+  const advancedFiltersPayload = React.useMemo(() => {
+    const payload: any = {};
+
+    // Period-based filtering (advanced only)
+    if (filters.period) {
+      payload.period = filters.period;
+    }
+
+    // Date range filtering
+    if (filters.date_from || filters.date_to) {
+      payload.date_from = filters.date_from;
+      payload.date_to = filters.date_to;
+    }
+
+    // Amount range filtering
+    if (filters.min_amount || filters.max_amount) {
+      payload.min_amount = filters.min_amount;
+      payload.max_amount = filters.max_amount;
+    }
+
+    // Basic filters - map to advanced format
+    if (filters.payment_status) {
+      payload.payment_statuses = [filters.payment_status];
+    }
+    if (filters.donation_type) {
+      payload.donation_types = [filters.donation_type];
+    }
+    if (filters.payment_method) {
+      payload.payment_methods = [filters.payment_method];
+    }
+    if (filters.currency) {
+      payload.currencies = [filters.currency];
+    }
+    if (filters.is_anonymous !== undefined) {
+      payload.anonymity_filter = filters.is_anonymous ? 'anonymous' : 'non_anonymous';
+    }
+
+    return payload;
+  }, [filters]);
+
+  // Use advanced filtering when any filters are applied, basic when no filters
+  const {
+    data: basicDonationsData,
+    isLoading: basicLoading,
+    error: basicError,
+  } = useDonations(filters, { enabled: !hasAnyFilters });
+
+  const {
+    data: advancedDonationsData,
+    isLoading: advancedLoading,
+    error: advancedError,
+  } = useAdvancedDonationFiltering(
+    advancedFiltersPayload,
+    {
+      page: filters.page,
+      limit: filters.limit,
+      sort_by: filters.sortBy || 'donated_at',
+      sort_order: filters.sortOrder || 'desc',
+    },
+    { enabled: hasAnyFilters }
+  );
+
+  // Use the appropriate data source
+  const donationsData = hasAnyFilters ? advancedDonationsData : basicDonationsData;
+  const isLoading = hasAnyFilters ? advancedLoading : basicLoading;
+  const error = hasAnyFilters ? advancedError : basicError;
+
   const { data: searchResults, isLoading: searchLoading } = useSearchDonations(
     searchQuery,
     filters
@@ -48,21 +126,69 @@ const DonationManagement: React.FC = () => {
     if (filters.payment_method) count++;
     if (filters.currency) count++;
     if (filters.is_anonymous !== undefined) count++;
+    if (filters.period) count++;
+    if (filters.date_from) count++;
+    if (filters.date_to) count++;
+    if (filters.min_amount) count++;
+    if (filters.max_amount) count++;
     if (searchQuery) count++;
     return count;
   }, [filters, searchQuery]);
 
   // Use search results if searching, otherwise use regular donations
   const displayData = searchQuery ? searchResults : donationsData;
-  const donations = displayData?.data || [];
-  const pagination = (displayData?.pagination || {
-    page: 1,
-    limit: 10,
-    totalCount: 0,
-    totalPages: 0,
-    hasNextPage: false,
-    hasPrevPage: false,
-  }) as {
+
+  // Handle different data structures between basic and advanced endpoints
+  const donations = React.useMemo(() => {
+    if (!displayData?.data) return [];
+
+    // Advanced filtering endpoint returns { data: { donations: [...] } }
+    if (hasAnyFilters && displayData.data.donations) {
+      return Array.isArray(displayData.data.donations) ? displayData.data.donations : [];
+    }
+
+    // Basic endpoint returns { data: [...] }
+    return Array.isArray(displayData.data) ? displayData.data : [];
+  }, [displayData, hasAnyFilters]);
+
+  // Handle different pagination structures between basic and advanced endpoints
+  const pagination = React.useMemo(() => {
+    if (!displayData) {
+      return {
+        page: 1,
+        limit: 10,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      };
+    }
+
+    // Advanced filtering endpoint returns { data: { pagination: {...} } }
+    if (hasAnyFilters && displayData.data?.pagination) {
+      const advancedPagination = displayData.data.pagination;
+      return {
+        page: advancedPagination.page || 1,
+        limit: advancedPagination.limit || 10,
+        totalCount: advancedPagination.total || 0,
+        totalPages: advancedPagination.pages || 0,
+        hasNextPage: (advancedPagination.page || 1) < (advancedPagination.pages || 0),
+        hasPrevPage: (advancedPagination.page || 1) > 1,
+      };
+    }
+
+    // Basic endpoint returns { pagination: {...} }
+    return (
+      displayData.pagination || {
+        page: 1,
+        limit: 10,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      }
+    );
+  }, [displayData, hasAnyFilters]) as {
     page: number;
     limit: number;
     totalCount: number;
@@ -101,6 +227,10 @@ const DonationManagement: React.FC = () => {
     } catch (error) {
       console.error('Failed to update donation status:', error);
     }
+  };
+
+  const handleTabChange = (tab: 'donations') => {
+    setActiveTab(tab);
   };
 
   return (
@@ -389,406 +519,529 @@ const DonationManagement: React.FC = () => {
             </div>
           )}
 
-          {/* Filters and Search */}
-          <div className="bg-theme-surface rounded-lg shadow-sm border border-theme mb-6">
-            {/* Filter Header */}
-            <div className="flex items-center justify-between p-4 border-b border-theme">
-              <div className="flex items-center space-x-3">
-                <h3 className="text-lg font-semibold text-theme-primary">Filters & Search</h3>
-                {activeFilterCount > 0 && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                    {activeFilterCount} active
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="flex items-center space-x-2 px-3 py-1 text-sm text-theme-muted hover:text-theme-primary transition-colors"
-              >
-                <span>{showFilters ? 'Hide' : 'Show'} Filters</span>
-                <svg
-                  className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`}
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+          {/* Tab Navigation */}
+          <div className="mb-6">
+            <div className="border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-8">
+                <button
+                  onClick={() => handleTabChange('donations')}
+                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
+                    activeTab === 'donations'
+                      ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                  }`}
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
-                </svg>
-              </button>
+                  Donations Management
+                </button>
+              </nav>
             </div>
+          </div>
 
-            {/* Filter Content */}
-            {showFilters && (
-              <div className="p-6">
-                {/* Quick Filter Buttons */}
-                <div className="mb-6">
-                  <h4 className="text-sm font-medium text-theme-primary mb-3">Quick Filters</h4>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => updateFilters({ payment_status: 'completed' })}
-                      className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors"
-                    >
-                      Completed Only
-                    </button>
-                    <button
-                      onClick={() => updateFilters({ payment_status: 'pending' })}
-                      className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full hover:bg-yellow-200 transition-colors"
-                    >
-                      Pending Only
-                    </button>
-                    <button
-                      onClick={() => updateFilters({ donation_type: 'recurring' })}
-                      className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
-                    >
-                      Recurring Only
-                    </button>
-                    <button
-                      onClick={() => updateFilters({ is_anonymous: true })}
-                      className="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors"
-                    >
-                      Anonymous Only
-                    </button>
-                    <button
-                      onClick={() => updateFilters({ payment_method: 'stripe' })}
-                      className="px-3 py-1 text-sm bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
-                    >
-                      Stripe Only
-                    </button>
+          {/* Tab Content */}
+          {activeTab === 'donations' && (
+            <>
+              {/* Filters and Search */}
+              <div className="bg-theme-surface rounded-lg shadow-sm border border-theme mb-6">
+                {/* Filter Header */}
+                <div className="flex items-center justify-between p-4 border-b border-theme">
+                  <div className="flex items-center space-x-3">
+                    <h3 className="text-lg font-semibold text-theme-primary">Filters & Search</h3>
+                    {activeFilterCount > 0 && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                        {activeFilterCount} active
+                      </span>
+                    )}
                   </div>
+                  <button
+                    onClick={() => setShowFilters(!showFilters)}
+                    className="flex items-center space-x-2 px-3 py-1 text-sm text-theme-muted hover:text-theme-primary transition-colors"
+                  >
+                    <span>{showFilters ? 'Hide' : 'Show'} Filters</span>
+                    <svg
+                      className={`w-4 h-4 transition-transform ${showFilters ? 'rotate-180' : ''}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </button>
                 </div>
 
-                {/* First Row - Search and Primary Filters */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
-                  {/* Search */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Multi-field Search
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Search donors, campaigns, transactions, notes..."
-                        value={searchQuery}
-                        onChange={e => setSearchQuery(e.target.value)}
-                        className="w-full px-3 py-2 pl-10 border border-theme rounded-lg bg-theme-background text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg
-                          className="h-5 w-5 text-theme-muted"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
+                {/* Filter Content */}
+                {showFilters && (
+                  <div className="p-6">
+                    {/* Quick Filter Buttons */}
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-theme-primary mb-3">Quick Filters</h4>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => updateFilters({ payment_status: 'completed' })}
+                          className="px-3 py-1 text-sm bg-green-100 text-green-800 rounded-full hover:bg-green-200 transition-colors"
                         >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                          />
-                        </svg>
+                          Completed Only
+                        </button>
+                        <button
+                          onClick={() => updateFilters({ payment_status: 'pending' })}
+                          className="px-3 py-1 text-sm bg-yellow-100 text-yellow-800 rounded-full hover:bg-yellow-200 transition-colors"
+                        >
+                          Pending Only
+                        </button>
+                        <button
+                          onClick={() => updateFilters({ donation_type: 'recurring' })}
+                          className="px-3 py-1 text-sm bg-blue-100 text-blue-800 rounded-full hover:bg-blue-200 transition-colors"
+                        >
+                          Recurring Only
+                        </button>
+                        <button
+                          onClick={() => updateFilters({ is_anonymous: true })}
+                          className="px-3 py-1 text-sm bg-purple-100 text-purple-800 rounded-full hover:bg-purple-200 transition-colors"
+                        >
+                          Anonymous Only
+                        </button>
+                        <button
+                          onClick={() => updateFilters({ payment_method: 'stripe' })}
+                          className="px-3 py-1 text-sm bg-indigo-100 text-indigo-800 rounded-full hover:bg-indigo-200 transition-colors"
+                        >
+                          Stripe Only
+                        </button>
                       </div>
                     </div>
+
+                    {/* First Row - Search and Primary Filters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      {/* Search */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Multi-field Search
+                        </label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="Search donors, campaigns, transactions, notes..."
+                            value={searchQuery}
+                            onChange={e => setSearchQuery(e.target.value)}
+                            className="w-full px-3 py-2 pl-10 border border-theme rounded-lg bg-theme-background text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          />
+                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg
+                              className="h-5 w-5 text-theme-muted"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                              />
+                            </svg>
+                          </div>
+                        </div>
+                        {searchQuery && (
+                          <p className="text-xs text-theme-muted mt-1">
+                            Searching in: donor names, campaign titles, transaction IDs, and notes
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Status Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Status
+                        </label>
+                        <select
+                          value={filters.payment_status || ''}
+                          onChange={e =>
+                            updateFilters({ payment_status: (e.target.value as any) || undefined })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Statuses</option>
+                          <option value="completed">Completed</option>
+                          <option value="pending">Pending</option>
+                          <option value="failed">Failed</option>
+                        </select>
+                      </div>
+
+                      {/* Type Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Type
+                        </label>
+                        <select
+                          value={filters.donation_type || ''}
+                          onChange={e =>
+                            updateFilters({ donation_type: (e.target.value as any) || undefined })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Types</option>
+                          <option value="one_time">One-time</option>
+                          <option value="recurring">Recurring</option>
+                          <option value="in_kind">In-kind</option>
+                        </select>
+                      </div>
+
+                      {/* Sort */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Sort By
+                        </label>
+                        <select
+                          value={`${filters.sortBy}-${filters.sortOrder}`}
+                          onChange={e => {
+                            const [sortBy, sortOrder] = e.target.value.split('-');
+                            updateFilters({ sortBy, sortOrder: sortOrder as 'asc' | 'desc' });
+                          }}
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="donated_at-desc">Newest First</option>
+                          <option value="donated_at-asc">Oldest First</option>
+                          <option value="amount-desc">Highest Amount</option>
+                          <option value="amount-asc">Lowest Amount</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Second Row - Additional Filters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                      {/* Payment Method Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Payment Method
+                        </label>
+                        <select
+                          value={filters.payment_method || ''}
+                          onChange={e =>
+                            updateFilters({ payment_method: (e.target.value as any) || undefined })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Methods</option>
+                          <option value="stripe">Stripe</option>
+                          <option value="telebirr">Telebirr</option>
+                          <option value="bank_transfer">Bank Transfer</option>
+                          <option value="paypal">PayPal</option>
+                        </select>
+                      </div>
+
+                      {/* Currency Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Currency
+                        </label>
+                        <select
+                          value={filters.currency || ''}
+                          onChange={e => updateFilters({ currency: e.target.value || undefined })}
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Currencies</option>
+                          <option value="USD">USD</option>
+                          <option value="ETB">ETB</option>
+                          <option value="EUR">EUR</option>
+                        </select>
+                      </div>
+
+                      {/* Anonymity Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Anonymity
+                        </label>
+                        <select
+                          value={
+                            filters.is_anonymous === undefined
+                              ? ''
+                              : filters.is_anonymous.toString()
+                          }
+                          onChange={e => {
+                            const value = e.target.value;
+                            updateFilters({
+                              is_anonymous: value === '' ? undefined : value === 'true',
+                            });
+                          }}
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Donations</option>
+                          <option value="false">Non-Anonymous</option>
+                          <option value="true">Anonymous Only</option>
+                        </select>
+                      </div>
+
+                      {/* Time Period Filter */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Time Period
+                        </label>
+                        <select
+                          value={filters.period || ''}
+                          onChange={e =>
+                            updateFilters({ period: (e.target.value as any) || undefined })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">All Time</option>
+                          <option value="today">Today</option>
+                          <option value="yesterday">Yesterday</option>
+                          <option value="last_7_days">Last 7 Days</option>
+                          <option value="last_30_days">Last 30 Days</option>
+                          <option value="this_month">This Month</option>
+                          <option value="last_month">Last Month</option>
+                          <option value="this_year">This Year</option>
+                          <option value="last_year">Last Year</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Third Row - Date Range and Amount Filters */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                      {/* From Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          From Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.date_from || ''}
+                          onChange={e => updateFilters({ date_from: e.target.value || undefined })}
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* To Date */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          To Date
+                        </label>
+                        <input
+                          type="date"
+                          value={filters.date_to || ''}
+                          onChange={e => updateFilters({ date_to: e.target.value || undefined })}
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Min Amount */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Min Amount
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="0.00"
+                          value={filters.min_amount || ''}
+                          onChange={e =>
+                            updateFilters({
+                              min_amount: e.target.value ? parseFloat(e.target.value) : undefined,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+
+                      {/* Max Amount */}
+                      <div>
+                        <label className="block text-sm font-medium text-theme-primary mb-2">
+                          Max Amount
+                        </label>
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          placeholder="No limit"
+                          value={filters.max_amount || ''}
+                          onChange={e =>
+                            updateFilters({
+                              max_amount: e.target.value ? parseFloat(e.target.value) : undefined,
+                            })
+                          }
+                          className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Clear Filters Button */}
+                    <div className="flex justify-end mt-4">
+                      <button
+                        onClick={() => {
+                          setFilters({
+                            page: 1,
+                            limit: 20,
+                            sortBy: 'donated_at',
+                            sortOrder: 'desc',
+                          });
+                          setSearchQuery('');
+                        }}
+                        className="px-6 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                      >
+                        Clear All Filters
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Results Summary and Active Filters */}
+              <div className="bg-theme-surface rounded-lg p-4 shadow-sm border border-theme mb-6">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  {/* Results Count */}
+                  <div className="flex items-center space-x-4">
+                    <h3 className="text-lg font-semibold text-theme-primary">
+                      {searchQuery ? 'Search Results' : 'All Donations'}
+                    </h3>
+                    <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
+                      {pagination.totalCount}{' '}
+                      {pagination.totalCount === 1 ? 'donation' : 'donations'}
+                    </span>
                     {searchQuery && (
-                      <p className="text-xs text-theme-muted mt-1">
-                        Searching in: donor names, campaign titles, transaction IDs, and notes
-                      </p>
+                      <span className="text-sm text-theme-muted">for "{searchQuery}"</span>
                     )}
                   </div>
 
-                  {/* Status Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Status
-                    </label>
-                    <select
-                      value={filters.payment_status || ''}
-                      onChange={e =>
-                        updateFilters({ payment_status: (e.target.value as any) || undefined })
-                      }
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">All Statuses</option>
-                      <option value="completed">Completed</option>
-                      <option value="pending">Pending</option>
-                      <option value="failed">Failed</option>
-                    </select>
-                  </div>
-
-                  {/* Type Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Type
-                    </label>
-                    <select
-                      value={filters.donation_type || ''}
-                      onChange={e =>
-                        updateFilters({ donation_type: (e.target.value as any) || undefined })
-                      }
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">All Types</option>
-                      <option value="one_time">One-time</option>
-                      <option value="recurring">Recurring</option>
-                      <option value="in_kind">In-kind</option>
-                    </select>
-                  </div>
-
-                  {/* Sort */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Sort By
-                    </label>
-                    <select
-                      value={`${filters.sortBy}-${filters.sortOrder}`}
-                      onChange={e => {
-                        const [sortBy, sortOrder] = e.target.value.split('-');
-                        updateFilters({ sortBy, sortOrder: sortOrder as 'asc' | 'desc' });
-                      }}
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="donated_at-desc">Newest First</option>
-                      <option value="donated_at-asc">Oldest First</option>
-                      <option value="amount-desc">Highest Amount</option>
-                      <option value="amount-asc">Lowest Amount</option>
-                    </select>
+                  {/* Active Filters */}
+                  <div className="flex flex-wrap gap-2">
+                    {filters.payment_status && (
+                      <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
+                        Status: {filters.payment_status}
+                      </span>
+                    )}
+                    {filters.donation_type && (
+                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
+                        Type: {filters.donation_type.replace('_', ' ')}
+                      </span>
+                    )}
+                    {filters.payment_method && (
+                      <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
+                        Method: {filters.payment_method}
+                      </span>
+                    )}
+                    {filters.currency && (
+                      <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
+                        Currency: {filters.currency}
+                      </span>
+                    )}
+                    {filters.is_anonymous !== undefined && (
+                      <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-medium">
+                        {filters.is_anonymous ? 'Anonymous Only' : 'Non-Anonymous Only'}
+                      </span>
+                    )}
                   </div>
                 </div>
+              </div>
 
-                {/* Second Row - Additional Filters */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Payment Method Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Payment Method
-                    </label>
-                    <select
-                      value={filters.payment_method || ''}
-                      onChange={e =>
-                        updateFilters({ payment_method: (e.target.value as any) || undefined })
-                      }
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
+              {/* Donations List */}
+              <div className="space-y-4">
+                {isLoading || searchLoading ? (
+                  <div className="space-y-4">
+                    {[...Array(5)].map((_, i) => (
+                      <div key={i} className="bg-theme-surface rounded-lg p-4 animate-pulse">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="space-y-2">
+                            <div className="h-6 bg-gray-300 rounded w-24"></div>
+                            <div className="h-4 bg-gray-300 rounded w-32"></div>
+                          </div>
+                          <div className="h-6 bg-gray-300 rounded w-16"></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : error ? (
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                    <h3 className="text-lg font-semibold text-red-800 mb-2">
+                      Error Loading Donations
+                    </h3>
+                    <p className="text-red-600">
+                      Failed to load donations. Please try again later.
+                    </p>
+                  </div>
+                ) : donations.length === 0 ? (
+                  <div className="bg-theme-surface rounded-lg p-8 text-center">
+                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <svg
+                        className="w-8 h-8 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="text-lg font-semibold text-theme-primary mb-2">
+                      No Donations Found
+                    </h3>
+                    <p className="text-theme-muted">
+                      {searchQuery
+                        ? 'No donations match your search criteria.'
+                        : 'No donations have been made yet.'}
+                    </p>
+                  </div>
+                ) : (
+                  donations.map((donation, index) => (
+                    <motion.div
+                      key={donation.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.05 }}
                     >
-                      <option value="">All Methods</option>
-                      <option value="stripe">Stripe</option>
-                      <option value="telebirr">Telebirr</option>
-                      <option value="bank_transfer">Bank Transfer</option>
-                      <option value="paypal">PayPal</option>
-                    </select>
+                      <DonationCard
+                        donation={donation}
+                        showCampaign={true}
+                        showDonor={true}
+                        showActions={true}
+                        onUpdate={handleUpdateDonation}
+                        searchTerm={searchQuery}
+                      />
+                    </motion.div>
+                  ))
+                )}
+              </div>
+
+              {/* Pagination */}
+              {pagination.totalPages && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-8">
+                  <div className="text-sm text-theme-muted">
+                    Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
+                    {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of{' '}
+                    {pagination.totalCount} donations
                   </div>
 
-                  {/* Currency Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Currency
-                    </label>
-                    <select
-                      value={filters.currency || ''}
-                      onChange={e => updateFilters({ currency: e.target.value || undefined })}
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">All Currencies</option>
-                      <option value="USD">USD</option>
-                      <option value="ETB">ETB</option>
-                      <option value="EUR">EUR</option>
-                    </select>
-                  </div>
-
-                  {/* Anonymity Filter */}
-                  <div>
-                    <label className="block text-sm font-medium text-theme-primary mb-2">
-                      Anonymity
-                    </label>
-                    <select
-                      value={
-                        filters.is_anonymous === undefined ? '' : filters.is_anonymous.toString()
-                      }
-                      onChange={e => {
-                        const value = e.target.value;
-                        updateFilters({
-                          is_anonymous: value === '' ? undefined : value === 'true',
-                        });
-                      }}
-                      className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    >
-                      <option value="">All Donations</option>
-                      <option value="false">Non-Anonymous</option>
-                      <option value="true">Anonymous Only</option>
-                    </select>
-                  </div>
-
-                  {/* Clear Filters */}
-                  <div className="flex items-end">
+                  <div className="flex items-center space-x-2">
                     <button
-                      onClick={() => {
-                        setFilters({
-                          page: 1,
-                          limit: 20,
-                          sortBy: 'donated_at',
-                          sortOrder: 'desc',
-                        });
-                        setSearchQuery('');
-                      }}
-                      className="w-full px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                      onClick={() => handlePageChange(pagination.page - 1)}
+                      disabled={!pagination.hasPrevPage}
+                      className="px-4 py-2 text-sm border border-theme rounded-lg bg-theme-background text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-theme-hover"
                     >
-                      Clear All Filters
+                      Previous
+                    </button>
+
+                    <span className="text-sm text-theme-muted">
+                      Page {pagination.page} of {pagination.totalPages}
+                    </span>
+
+                    <button
+                      onClick={() => handlePageChange(pagination.page + 1)}
+                      disabled={!pagination.hasNextPage}
+                      className="px-4 py-2 text-sm border border-theme rounded-lg bg-theme-background text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-theme-hover"
+                    >
+                      Next
                     </button>
                   </div>
                 </div>
-              </div>
-            )}
-          </div>
-
-          {/* Results Summary and Active Filters */}
-          <div className="bg-theme-surface rounded-lg p-4 shadow-sm border border-theme mb-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              {/* Results Count */}
-              <div className="flex items-center space-x-4">
-                <h3 className="text-lg font-semibold text-theme-primary">
-                  {searchQuery ? 'Search Results' : 'All Donations'}
-                </h3>
-                <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                  {pagination.totalCount} {pagination.totalCount === 1 ? 'donation' : 'donations'}
-                </span>
-                {searchQuery && (
-                  <span className="text-sm text-theme-muted">for "{searchQuery}"</span>
-                )}
-              </div>
-
-              {/* Active Filters */}
-              <div className="flex flex-wrap gap-2">
-                {filters.payment_status && (
-                  <span className="px-2 py-1 bg-green-100 text-green-800 rounded text-xs font-medium">
-                    Status: {filters.payment_status}
-                  </span>
-                )}
-                {filters.donation_type && (
-                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-medium">
-                    Type: {filters.donation_type.replace('_', ' ')}
-                  </span>
-                )}
-                {filters.payment_method && (
-                  <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs font-medium">
-                    Method: {filters.payment_method}
-                  </span>
-                )}
-                {filters.currency && (
-                  <span className="px-2 py-1 bg-yellow-100 text-yellow-800 rounded text-xs font-medium">
-                    Currency: {filters.currency}
-                  </span>
-                )}
-                {filters.is_anonymous !== undefined && (
-                  <span className="px-2 py-1 bg-indigo-100 text-indigo-800 rounded text-xs font-medium">
-                    {filters.is_anonymous ? 'Anonymous Only' : 'Non-Anonymous Only'}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Donations List */}
-          <div className="space-y-4">
-            {isLoading || searchLoading ? (
-              <div className="space-y-4">
-                {[...Array(5)].map((_, i) => (
-                  <div key={i} className="bg-theme-surface rounded-lg p-4 animate-pulse">
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="space-y-2">
-                        <div className="h-6 bg-gray-300 rounded w-24"></div>
-                        <div className="h-4 bg-gray-300 rounded w-32"></div>
-                      </div>
-                      <div className="h-6 bg-gray-300 rounded w-16"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">Error Loading Donations</h3>
-                <p className="text-red-600">Failed to load donations. Please try again later.</p>
-              </div>
-            ) : donations.length === 0 ? (
-              <div className="bg-theme-surface rounded-lg p-8 text-center">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <svg
-                    className="w-8 h-8 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"
-                    />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-theme-primary mb-2">
-                  No Donations Found
-                </h3>
-                <p className="text-theme-muted">
-                  {searchQuery
-                    ? 'No donations match your search criteria.'
-                    : 'No donations have been made yet.'}
-                </p>
-              </div>
-            ) : (
-              donations.map((donation, index) => (
-                <motion.div
-                  key={donation.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <DonationCard
-                    donation={donation}
-                    showCampaign={true}
-                    showDonor={true}
-                    showActions={true}
-                    onUpdate={handleUpdateDonation}
-                    searchTerm={searchQuery}
-                  />
-                </motion.div>
-              ))
-            )}
-          </div>
-
-          {/* Pagination */}
-          {pagination.totalPages && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-8">
-              <div className="text-sm text-theme-muted">
-                Showing {(pagination.page - 1) * pagination.limit + 1} to{' '}
-                {Math.min(pagination.page * pagination.limit, pagination.totalCount)} of{' '}
-                {pagination.totalCount} donations
-              </div>
-
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handlePageChange(pagination.page - 1)}
-                  disabled={!pagination.hasPrevPage}
-                  className="px-4 py-2 text-sm border border-theme rounded-lg bg-theme-background text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-theme-hover"
-                >
-                  Previous
-                </button>
-
-                <span className="text-sm text-theme-muted">
-                  Page {pagination.page} of {pagination.totalPages}
-                </span>
-
-                <button
-                  onClick={() => handlePageChange(pagination.page + 1)}
-                  disabled={!pagination.hasNextPage}
-                  className="px-4 py-2 text-sm border border-theme rounded-lg bg-theme-background text-theme-primary disabled:opacity-50 disabled:cursor-not-allowed hover:bg-theme-hover"
-                >
-                  Next
-                </button>
-              </div>
-            </div>
+              )}
+            </>
           )}
         </div>
       </div>
