@@ -2,7 +2,7 @@
 // Comprehensive page showing all user information, statistics, and related data
 
 import { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   FiArrowLeft,
@@ -31,7 +31,39 @@ import { formatCurrency } from '../../lib/utils';
 export default function UserDetail() {
   const { userId } = useParams<{ userId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // Determine back navigation based on 'from' parameter
+  const getBackPath = () => {
+    const from = searchParams.get('from');
+    const tier = searchParams.get('tier');
+
+    if (from === 'membership-plan' && tier) {
+      return `/admin/memberships/plan/${tier}`;
+    } else if (from === 'memberships') {
+      return '/admin/memberships';
+    } else if (from === 'donors') {
+      return '/admin/donors';
+    } else {
+      return '/admin/users';
+    }
+  };
+
+  const getBackLabel = () => {
+    const from = searchParams.get('from');
+    const tier = searchParams.get('tier');
+
+    if (from === 'membership-plan' && tier) {
+      return `Back to ${tier.charAt(0).toUpperCase() + tier.slice(1)} Plan`;
+    } else if (from === 'memberships') {
+      return 'Back to Memberships';
+    } else if (from === 'donors') {
+      return 'Back to Donors';
+    } else {
+      return 'Back to Users';
+    }
+  };
 
   // Hooks
   const {
@@ -69,9 +101,9 @@ export default function UserDetail() {
           <p className="text-gray-600 dark:text-gray-400 mb-6">
             The user you're looking for doesn't exist or you don't have permission to view it.
           </p>
-          <Button onClick={() => navigate('/admin/users')} variant="outline">
+          <Button onClick={() => navigate(getBackPath())} variant="outline">
             <FiArrowLeft className="w-4 h-4 mr-2" />
-            Back to Users
+            {getBackLabel()}
           </Button>
         </div>
       </div>
@@ -85,9 +117,9 @@ export default function UserDetail() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div className="flex items-center gap-4">
-              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/users')}>
+              <Button variant="ghost" size="sm" onClick={() => navigate(getBackPath())}>
                 <FiArrowLeft className="w-4 h-4 mr-2" />
-                Back to Users
+                {getBackLabel()}
               </Button>
 
               <div className="flex items-center gap-3">

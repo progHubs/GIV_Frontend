@@ -16,7 +16,8 @@ export const membershipQueryKeys = {
   plans: () => [...membershipQueryKeys.all, 'plans'] as const,
   userMembership: () => [...membershipQueryKeys.all, 'user'] as const,
   stats: () => [...membershipQueryKeys.all, 'stats'] as const,
-  adminMemberships: (filters: MembershipFilters) => [...membershipQueryKeys.all, 'admin', filters] as const,
+  adminMemberships: (filters: MembershipFilters) =>
+    [...membershipQueryKeys.all, 'admin', filters] as const,
 };
 
 // ==================== PUBLIC HOOKS ====================
@@ -44,7 +45,12 @@ export const useUserMembership = () => {
     queryKey: membershipQueryKeys.userMembership(),
     queryFn: () => membershipApi.getUserMembership(),
     select: data => (data.success ? data.data : null),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 2 * 60 * 1000, // 2 minutes (reduced for better refresh)
+    retry: (failureCount, error: any) => {
+      // Don't retry on 404 (no membership found)
+      if (error?.response?.status === 404) return false;
+      return failureCount < 3;
+    },
   });
 };
 
@@ -140,6 +146,18 @@ export const useAllMemberships = (filters: MembershipFilters = {}) => {
 };
 
 /**
+ * Hook for fetching all memberships (admin only)
+ */
+export const useAdminMemberships = (filters: MembershipFilters = {}) => {
+  return useQuery({
+    queryKey: membershipQueryKeys.adminMemberships(filters),
+    queryFn: () => membershipApi.getAllMemberships(filters),
+    select: data => (data.success ? data.data : null),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+/**
  * Hook for updating membership status (admin only)
  */
 export const useUpdateMembershipStatus = () => {
@@ -168,13 +186,8 @@ export const useAdminCancelMembership = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      membershipId,
-      cancellationData,
-    }: {
-      membershipId: string;
-      cancellationData: { reason: string; cancel_at_period_end?: boolean };
-    }) => membershipApi.adminCancelMembership(membershipId, cancellationData),
+    mutationFn: (membershipId: string) =>
+      membershipApi.adminCancelMembership(membershipId, { reason: 'Admin cancellation' }),
     onSuccess: () => {
       // Invalidate admin memberships queries
       queryClient.invalidateQueries({ queryKey: [...membershipQueryKeys.all, 'admin'] });
@@ -205,7 +218,7 @@ export const useAdminReactivateMembership = () => {
  * Hook to check if user has active membership
  */
 export const useHasActiveMembership = () => {
-  const { data: membership } = useUserMembership();
+  const membership = useUserMembership();
   return membership?.status === 'active';
 };
 
@@ -213,7 +226,7 @@ export const useHasActiveMembership = () => {
  * Hook to get user's membership tier
  */
 export const useUserMembershipTier = () => {
-  const { data: membership } = useUserMembership();
+  const membership = useUserMembership();
   return membership?.membership_plans?.tier || null;
 };
 
@@ -221,14 +234,14 @@ export const useUserMembershipTier = () => {
  * Hook to check if user can upgrade membership
  */
 export const useCanUpgradeMembership = () => {
-  const { data: membership } = useUserMembership();
+  const membership = useUserMembership();
   const { data: plans } = useMembershipPlans();
-  
+
   if (!membership || !plans) return false;
-  
+
   const currentTier = membership.membership_plans?.tier;
   const availableTiers = ['bronze', 'silver', 'gold', 'platinum'];
   const currentIndex = availableTiers.indexOf(currentTier || '');
-  
+
   return currentIndex < availableTiers.length - 1;
 };

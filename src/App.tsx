@@ -34,6 +34,11 @@ import UnauthorizedPage from './pages/UnauthorizedPage';
 import DonationSuccess from './pages/donations/DonationSuccess';
 import DonationCancelled from './pages/donations/DonationCancelled';
 
+// Membership Pages
+import MembershipPage from './pages/MembershipPage';
+import MembershipSuccessPage from './pages/MembershipSuccessPage';
+import GeneralDonationPage from './pages/GeneralDonationPage';
+
 // User Pages
 import UserProfile from './pages/profile/UserProfile';
 
@@ -45,6 +50,8 @@ import DonorDetail from './pages/admin/DonorDetail';
 import CampaignManagement from './pages/admin/CampaignManagement';
 import UserManagement from './pages/admin/UserManagement';
 import UserDetail from './pages/admin/UserDetail';
+import MembershipManagement from './pages/admin/MembershipManagement';
+import MembershipPlanDetail from './pages/admin/MembershipPlanDetail';
 
 // Component to handle legacy reset password URLs with query parameters
 const ResetPasswordRedirect = () => {
@@ -79,6 +86,11 @@ function App() {
               {/* Donation routes - Public */}
               <Route path="/donation-success" element={<DonationSuccess />} />
               <Route path="/donation-cancelled" element={<DonationCancelled />} />
+
+              {/* Membership routes */}
+              <Route path="/membership" element={<MembershipPage />} />
+              <Route path="/membership/success" element={<MembershipSuccessPage />} />
+              <Route path="/donate" element={<GeneralDonationPage />} />
 
               {/* Auth routes */}
               <Route path="/auth/login" element={<LoginPage />} />
@@ -154,6 +166,22 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <UserDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/memberships"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <MembershipManagement />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/memberships/plan/:tier"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <MembershipPlanDetail />
                   </ProtectedRoute>
                 }
               />

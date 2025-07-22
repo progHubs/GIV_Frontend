@@ -5,8 +5,10 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 
 const HeroSection: React.FC = () => {
+  const navigate = useNavigate();
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -66,9 +68,10 @@ const HeroSection: React.FC = () => {
               <motion.button
                 whileHover={{ scale: 1.01, y: -2 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/membership')}
                 className="btn-theme-primary px-8 py-4 rounded-xl font-semibold text-lg flex items-center justify-center shadow-lg hover:shadow-xl transition-shadow"
               >
-                Donate Now
+                Become a Donor
                 <motion.svg
                   className="ml-2 w-5 h-5"
                   fill="none"

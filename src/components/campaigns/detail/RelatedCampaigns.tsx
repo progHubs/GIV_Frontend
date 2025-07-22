@@ -4,7 +4,7 @@
  */
 
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Campaign } from '../../../types';
 import { useCampaigns } from '../../../hooks/useCampaigns';
@@ -14,6 +14,7 @@ interface RelatedCampaignsProps {
 }
 
 const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) => {
+  const navigate = useNavigate();
   // Fetch related campaigns (same category, excluding current campaign)
   const { data: campaignsData, isLoading } = useCampaigns({
     category: currentCampaign.category,
@@ -236,7 +237,7 @@ const RelatedCampaigns: React.FC<RelatedCampaignsProps> = ({ currentCampaign }) 
                         onClick={e => {
                           e.preventDefault();
                           // Navigate to campaign detail page using slug
-                          window.location.href = `/campaigns/${campaign.slug || campaign.id}`;
+                          navigate(`/campaigns/${campaign.slug || campaign.id}`);
                         }}
                         className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 transition-colors duration-200 shadow-md hover:shadow-lg"
                       >

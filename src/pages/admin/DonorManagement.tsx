@@ -6,12 +6,24 @@
 import React, { useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import {
+  CogIcon,
+  CreditCardIcon,
+  XMarkIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon,
+  UserGroupIcon,
+  ChartBarIcon,
+} from '@heroicons/react/24/outline';
 import { useDonors, useDonorStats, useUpdateDonorProfile } from '../../hooks/useDonations';
+import { useMembershipStats } from '../../hooks/useMembership';
 import { useStripeUtils } from '../../hooks/useStripe';
 
-import type { DonorProfile, DonationTier } from '../../types/donation';
-import DonorTierCards from '../../components/admin/DonorTierCards';
-import TierBadge from '../../components/common/TierBadge';
+import type { DonorProfile } from '../../types/donation';
+import MembershipManagementCard from '../../components/admin/MembershipManagementCard';
+import MembershipBadge from '../../components/common/MembershipBadge';
+import { api } from '../../lib/api';
 
 const DonorManagement: React.FC = () => {
   const navigate = useNavigate();
@@ -20,17 +32,21 @@ const DonorManagement: React.FC = () => {
     limit: 20,
     sortBy: 'created_at',
     sortOrder: 'desc' as 'asc' | 'desc',
-    donation_tier: undefined as string | undefined,
+    membership_tier: undefined as string | undefined,
     is_recurring_donor: undefined as boolean | undefined,
   });
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDonor, setSelectedDonor] = useState<DonorProfile | null>(null);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedTier, setSelectedTier] = useState<DonationTier | undefined>(undefined);
 
   // Hooks
   const { data: donorsData, isLoading, error } = useDonors(filters);
   const { data: stats } = useDonorStats();
+  const {
+    data: membershipStats,
+    isLoading: membershipStatsLoading,
+    error: membershipStatsError,
+  } = useMembershipStats();
   const updateDonorMutation = useUpdateDonorProfile();
   const { formatCurrency } = useStripeUtils();
 
@@ -61,15 +77,10 @@ const DonorManagement: React.FC = () => {
     setFilters(prev => ({ ...prev, page: newPage }));
   };
 
-  // Handle tier filter
-  const handleTierClick = useCallback((tier: DonationTier | undefined) => {
-    setSelectedTier(tier);
-    setFilters(prev => ({
-      ...prev,
-      donation_tier: tier || undefined,
-      page: 1,
-    }));
-  }, []);
+  // Handle membership management click
+  const handleMembershipManagementClick = useCallback(() => {
+    navigate('/admin/memberships');
+  }, [navigate]);
 
   // Handle donor edit
   const handleEditDonor = (donor: DonorProfile) => {
@@ -254,14 +265,12 @@ const DonorManagement: React.FC = () => {
             </div>
           )}
 
-          {/* Tier Cards */}
-          {stats && (
-            <DonorTierCards
-              stats={stats}
-              onTierClick={handleTierClick}
-              selectedTier={selectedTier}
-            />
-          )}
+          {/* Membership Management Card */}
+          <MembershipManagementCard
+            stats={membershipStats || null}
+            onClick={handleMembershipManagementClick}
+            isLoading={membershipStatsLoading}
+          />
 
           {/* Filters and Search */}
           <div className="bg-theme-surface rounded-lg p-6 shadow-sm border border-theme mb-6">
@@ -407,8 +416,11 @@ const DonorManagement: React.FC = () => {
                           <h3 className="font-semibold text-theme-primary">
                             {donor.users?.full_name || donor.users?.email || 'Anonymous Donor'}
                           </h3>
-                          {donor.donation_tier && (
-                            <TierBadge tier={donor.donation_tier} size="sm" animated={false} />
+                          {donor.users?.user_memberships?.[0]?.membership_plans?.tier && (
+                            <MembershipBadge
+                              tier={donor.users.user_memberships[0].membership_plans.tier}
+                              size="sm"
+                            />
                           )}
                           {donor.is_recurring_donor && (
                             <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">

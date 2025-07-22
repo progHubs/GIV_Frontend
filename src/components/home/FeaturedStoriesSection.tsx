@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import StoryCard from './StoryCard';
 
 // Mock data for featured stories
@@ -127,6 +128,7 @@ const mockStories = [
 ];
 
 const FeaturedStoriesSection: React.FC = () => {
+  const navigate = useNavigate();
   const [currentIndex, setCurrentIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
 
@@ -252,7 +254,7 @@ const FeaturedStoriesSection: React.FC = () => {
         {/* View All Posts Button */}
         <div className="text-center mt-12">
           <button
-            onClick={() => (window.location.href = '/posts')}
+            onClick={() => navigate('/posts')}
             className="btn-theme-primary px-8 py-3 rounded-lg font-semibold transition-colors inline-flex items-center"
           >
             View All Posts

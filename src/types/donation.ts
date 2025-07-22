@@ -222,29 +222,6 @@ export interface PaymentMethodBreakdown {
   percentage: number;
 }
 
-// Saved filters interfaces
-export interface SavedFilter {
-  id: string;
-  user_id: string;
-  filter_name: string;
-  filter_criteria: AdvancedDonationFilters;
-  is_default: boolean;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface SaveFilterRequest {
-  filter_name: string;
-  filter_criteria: AdvancedDonationFilters;
-  is_default?: boolean;
-}
-
-export interface UpdateFilterRequest {
-  filter_name?: string;
-  filter_criteria?: AdvancedDonationFilters;
-  is_default?: boolean;
-}
-
 // Donation Statistics (admin dashboard)
 export interface DonationStats {
   total_donations: number;
@@ -401,17 +378,6 @@ export interface DonationStatisticsResponse {
 export interface DonationAnalyticsResponse {
   success: boolean;
   data: DonationAnalytics;
-}
-
-export interface SavedFiltersResponse {
-  success: boolean;
-  data: SavedFilter[];
-}
-
-export interface SaveFilterResponse {
-  success: boolean;
-  data: SavedFilter;
-  message: string;
 }
 
 // Component Props Types

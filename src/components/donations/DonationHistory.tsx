@@ -10,21 +10,19 @@ import { useUserDonationHistory, useAdvancedDonationFiltering } from '../../hook
 import { useStripeUtils } from '../../hooks/useStripe';
 import DonationCard from './DonationCard';
 import AdvancedFilters from './AdvancedFilters';
-import SavedFiltersManager from './SavedFiltersManager';
+
 import type { AdvancedDonationFilters } from '../../types/donation';
 
 interface DonationHistoryProps {
   className?: string;
   enableAdvancedFilters?: boolean;
   allowExport?: boolean;
-  enableSavedFilters?: boolean;
 }
 
 const DonationHistory: React.FC<DonationHistoryProps> = ({
   className = '',
   enableAdvancedFilters = false,
   allowExport = false,
-  enableSavedFilters = false,
 }) => {
   const [basicFilters, setBasicFilters] = useState<{
     page: number;
@@ -246,15 +244,6 @@ const DonationHistory: React.FC<DonationHistoryProps> = ({
           onClearFilters={handleClearFilters}
           showResultCount={true}
           resultCount={pagination.totalCount}
-          className="mb-6"
-        />
-      )}
-
-      {/* Saved Filters Manager */}
-      {enableSavedFilters && (
-        <SavedFiltersManager
-          currentFilters={advancedFilters}
-          onApplyFilter={handleAdvancedFilterChange}
           className="mb-6"
         />
       )}

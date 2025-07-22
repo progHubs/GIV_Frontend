@@ -1,22 +1,22 @@
 import { api } from './api';
 
 const MEMBERSHIP_ENDPOINTS = {
-  plans: '/membership/plans',
-  subscribe: '/membership/subscribe',
-  myMembership: '/membership/my-membership',
-  changePlan: '/membership/change-plan',
-  cancel: '/membership/cancel',
-  reactivate: '/membership/reactivate',
+  plans: '/memberships/plans',
+  subscribe: '/memberships/subscribe',
+  myMembership: '/memberships/my-membership',
+  changePlan: '/memberships/change-plan',
+  cancel: '/memberships/cancel',
+  reactivate: '/memberships/reactivate',
   admin: {
-    stats: '/membership/admin/stats',
-    memberships: '/membership/admin/memberships'
-  }
+    stats: '/memberships/admin/stats',
+    memberships: '/memberships/admin/memberships',
+  },
 };
 
 // Utility function to build query parameters
 const buildQueryParams = (params: Record<string, any>): string => {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
@@ -28,7 +28,7 @@ const buildQueryParams = (params: Record<string, any>): string => {
       }
     }
   });
-  
+
   return searchParams.toString();
 };
 
@@ -49,10 +49,7 @@ export const membershipApi = {
    * Subscribe to a membership plan
    * POST /membership/subscribe
    */
-  subscribeMembership: async (subscriptionData: {
-    plan_id: string;
-    payment_method_id: string;
-  }) => {
+  subscribeMembership: async (subscriptionData: { plan_id: string; payment_method_id: string }) => {
     return api.post(MEMBERSHIP_ENDPOINTS.subscribe, subscriptionData);
   },
 
@@ -68,9 +65,7 @@ export const membershipApi = {
    * Change membership plan
    * PUT /membership/change-plan
    */
-  changeMembershipPlan: async (planData: {
-    new_plan_id: string;
-  }) => {
+  changeMembershipPlan: async (planData: { new_plan_id: string }) => {
     return api.put(MEMBERSHIP_ENDPOINTS.changePlan, planData);
   },
 
@@ -107,16 +102,20 @@ export const membershipApi = {
    * Get all memberships with filtering (admin only)
    * GET /membership/admin/memberships
    */
-  getAllMemberships: async (filters: {
-    status?: string[];
-    tier?: string[];
-    billing_cycle?: string[];
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}) => {
+  getAllMemberships: async (
+    filters: {
+      status?: string[];
+      tier?: string[];
+      billing_cycle?: string[];
+      search?: string;
+      page?: number;
+      limit?: number;
+    } = {}
+  ) => {
     const params = buildQueryParams(filters);
-    const url = params ? `${MEMBERSHIP_ENDPOINTS.admin.memberships}?${params}` : MEMBERSHIP_ENDPOINTS.admin.memberships;
+    const url = params
+      ? `${MEMBERSHIP_ENDPOINTS.admin.memberships}?${params}`
+      : MEMBERSHIP_ENDPOINTS.admin.memberships;
     return api.get(url);
   },
 
@@ -124,31 +123,37 @@ export const membershipApi = {
    * Update membership status (admin only)
    * PUT /membership/admin/memberships/:id/status
    */
-  updateMembershipStatus: async (membershipId: string, statusData: {
-    status: string;
-    notes?: string;
-  }) => {
+  updateMembershipStatus: async (
+    membershipId: string,
+    statusData: {
+      status: string;
+      notes?: string;
+    }
+  ) => {
     return api.put(`${MEMBERSHIP_ENDPOINTS.admin.memberships}/${membershipId}/status`, statusData);
   },
 
   /**
    * Cancel membership (admin only)
-   * POST /membership/admin/memberships/:id/cancel
+   * POST /memberships/admin/memberships/:id/cancel
    */
-  adminCancelMembership: async (membershipId: string, cancellationData: {
-    reason: string;
-    cancel_at_period_end?: boolean;
-  }) => {
-    return api.post(`${MEMBERSHIP_ENDPOINTS.admin.memberships}/${membershipId}/cancel`, cancellationData);
+  adminCancelMembership: async (
+    membershipId: string,
+    cancellationData: {
+      reason: string;
+      cancel_at_period_end?: boolean;
+    }
+  ) => {
+    return api.post(`/memberships/admin/memberships/${membershipId}/cancel`, cancellationData);
   },
 
   /**
    * Reactivate membership (admin only)
-   * POST /membership/admin/memberships/:id/reactivate
+   * POST /memberships/admin/memberships/:id/reactivate
    */
   adminReactivateMembership: async (membershipId: string) => {
-    return api.post(`${MEMBERSHIP_ENDPOINTS.admin.memberships}/${membershipId}/reactivate`);
-  }
+    return api.post(`/memberships/admin/memberships/${membershipId}/reactivate`);
+  },
 };
 
 export default membershipApi;

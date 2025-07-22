@@ -5,18 +5,33 @@
 
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { toast } from 'react-hot-toast';
+import { CogIcon, CreditCardIcon, XMarkIcon } from '@heroicons/react/24/outline';
 import { ThemeProvider } from '../../theme';
 import ModernNavigation from '../../components/navigation/ModernNavigation';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import { DonationHistory, DonationStats } from '../../components/donations';
 import ProfileSidebar from '../../components/profile/ProfileSidebar';
-import TierBadge from '../../components/common/TierBadge';
+import MembershipBadge from '../../components/common/MembershipBadge';
 import { useDonorProfile } from '../../hooks/useDonations';
+import { useUserMembership, useReactivateMembership } from '../../hooks/useMembership';
+import { api } from '../../lib/api';
 
 const UserProfile: React.FC = () => {
+  const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState('overview');
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [isReactivating, setIsReactivating] = useState(false);
   const { user, isLoading: authLoading } = useAuth();
   const { data: donorProfile } = useDonorProfile(user?.id?.toString());
+  const {
+    data: userMembership,
+    refetch: refetchMembership,
+    isLoading: membershipLoading,
+  } = useUserMembership();
+  const reactivateMembershipMutation = useReactivateMembership();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -52,6 +67,46 @@ const UserProfile: React.FC = () => {
     );
   }
 
+  const handleCancelMembership = async () => {
+    if (!userMembership) return;
+
+    setIsCancelling(true);
+    try {
+      await api.post('/memberships/cancel', {
+        cancel_at_period_end: true,
+      });
+
+      toast.success('Membership will be cancelled at the end of your current billing period.');
+      setShowCancelModal(false);
+      refetchMembership();
+    } catch (error: any) {
+      console.error('Cancel membership error:', error);
+      toast.error(error.response?.data?.error || 'Failed to cancel membership. Please try again.');
+    } finally {
+      setIsCancelling(false);
+    }
+  };
+
+  const handleChangePlan = () => {
+    navigate('/membership');
+  };
+
+  const handleReactivateMembership = async () => {
+    setIsReactivating(true);
+    try {
+      await reactivateMembershipMutation.mutateAsync();
+      toast.success('Membership reactivated successfully!');
+      refetchMembership();
+    } catch (error: any) {
+      console.error('Reactivate membership error:', error);
+      toast.error(
+        error.response?.data?.error || 'Failed to reactivate membership. Please try again.'
+      );
+    } finally {
+      setIsReactivating(false);
+    }
+  };
+
   const sections = [
     { id: 'overview', name: 'Overview', icon: '🏠' },
     { id: 'donations', name: 'Donations', icon: '💝' },
@@ -75,8 +130,10 @@ const UserProfile: React.FC = () => {
                       <h4 className="font-semibold text-blue-900 mb-2">Donor Status</h4>
                       <div className="flex items-center space-x-3">
                         <span className="text-sm text-blue-700">Current Tier:</span>
-                        {donorProfile.donation_tier && (
-                          <TierBadge tier={donorProfile.donation_tier} size="md" animated={true} />
+                        {userMembership && userMembership.status === 'active' ? (
+                          <MembershipBadge tier={userMembership.membership_plans.tier} size="md" />
+                        ) : (
+                          <span className="text-sm text-gray-500">No active membership</span>
                         )}
                       </div>
                       <div className="mt-2 text-sm text-blue-600">
@@ -94,6 +151,142 @@ const UserProfile: React.FC = () => {
                 </div>
               )}
             </div>
+
+            {/* Membership Management Section */}
+            {!membershipLoading && userMembership && (
+              <div className="bg-theme-surface rounded-lg p-6 border border-theme">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-theme-primary">
+                    Membership Management
+                  </h3>
+                  {userMembership.status === 'active' && (
+                    <MembershipBadge tier={userMembership.membership_plans.tier} size="sm" />
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Current Plan Details */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-theme-primary">Current Plan</h4>
+                    <div className="space-y-2 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-theme-muted">Plan:</span>
+                        <span className="font-medium">{userMembership.membership_plans.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-muted">Amount:</span>
+                        <span className="font-medium">
+                          $
+                          {userMembership.membership_plans?.amount
+                            ? Number(userMembership.membership_plans.amount).toFixed(2)
+                            : '0.00'}
+                          /{userMembership.membership_plans?.billing_cycle || 'monthly'}
+                        </span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-theme-muted">Status:</span>
+                        <span
+                          className={`font-medium capitalize ${
+                            userMembership.status === 'active'
+                              ? 'text-green-600'
+                              : userMembership.status === 'cancelled'
+                                ? 'text-red-600'
+                                : 'text-yellow-600'
+                          }`}
+                        >
+                          {userMembership.status}
+                        </span>
+                      </div>
+                      {/* Only show Next Billing for active memberships that are NOT scheduled to cancel */}
+                      {userMembership.status === 'active' &&
+                        !userMembership.cancel_at_period_end && (
+                          <div className="flex justify-between">
+                            <span className="text-theme-muted">Next Billing:</span>
+                            <span className="font-medium">
+                              {userMembership.current_period_end
+                                ? new Date(userMembership.current_period_end).toLocaleDateString()
+                                : 'N/A'}
+                            </span>
+                          </div>
+                        )}
+                      {userMembership.cancel_at_period_end && (
+                        <div className="flex justify-between">
+                          <span className="text-theme-muted">Cancels:</span>
+                          <span className="font-medium text-red-600">
+                            {userMembership.current_period_end
+                              ? new Date(userMembership.current_period_end).toLocaleDateString()
+                              : 'N/A'}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Management Actions */}
+                  <div className="space-y-3">
+                    <h4 className="font-medium text-theme-primary">Actions</h4>
+                    <div className="space-y-3">
+                      <button
+                        onClick={handleChangePlan}
+                        className="w-full flex items-center justify-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        <CreditCardIcon className="h-4 w-4 mr-2" />
+                        Change Plan
+                      </button>
+
+                      {userMembership.status === 'active' &&
+                        !userMembership.cancel_at_period_end && (
+                          <button
+                            onClick={() => setShowCancelModal(true)}
+                            className="w-full flex items-center justify-center px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                          >
+                            <XMarkIcon className="h-4 w-4 mr-2" />
+                            Cancel Membership
+                          </button>
+                        )}
+
+                      {userMembership.cancel_at_period_end && (
+                        <div className="space-y-3">
+                          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                            <p className="text-sm text-yellow-800">
+                              Your membership will be cancelled on{' '}
+                              {new Date(userMembership.current_period_end).toLocaleDateString()}.
+                            </p>
+                          </div>
+                          <button
+                            onClick={handleReactivateMembership}
+                            disabled={isReactivating}
+                            className="w-full flex items-center justify-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50"
+                          >
+                            <CreditCardIcon className="h-4 w-4 mr-2" />
+                            {isReactivating ? 'Reactivating...' : 'Reactivate Membership'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* No Membership CTA */}
+            {!membershipLoading && !userMembership && user.is_donor && (
+              <div className="bg-theme-surface rounded-lg p-6 border border-theme">
+                <div className="text-center">
+                  <h3 className="text-lg font-semibold text-theme-primary mb-2">Become a Member</h3>
+                  <p className="text-theme-muted mb-4">
+                    Join our membership program for exclusive benefits and regular impact.
+                  </p>
+                  <button
+                    onClick={() => navigate('/membership')}
+                    className="inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  >
+                    <CreditCardIcon className="h-5 w-5 mr-2" />
+                    View Membership Plans
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         );
 
@@ -188,11 +381,10 @@ const UserProfile: React.FC = () => {
                           <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">
                             Donor
                           </span>
-                          {donorProfile?.donation_tier && (
-                            <TierBadge
-                              tier={donorProfile.donation_tier}
+                          {userMembership && userMembership.status === 'active' && (
+                            <MembershipBadge
+                              tier={userMembership.membership_plans.tier}
                               size="sm"
-                              animated={true}
                             />
                           )}
                         </>
@@ -244,6 +436,53 @@ const UserProfile: React.FC = () => {
             </motion.div>
           </div>
         </div>
+
+        {/* Cancel Membership Modal */}
+        {showCancelModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4 shadow-xl"
+            >
+              <div className="flex items-center mb-4">
+                <XMarkIcon className="h-6 w-6 text-red-500 mr-3" />
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                  Cancel Membership
+                </h3>
+              </div>
+
+              <div className="mb-6">
+                <p className="text-gray-600 dark:text-gray-400 mb-4">
+                  Are you sure you want to cancel your membership? Your membership will remain
+                  active until the end of your current billing period.
+                </p>
+                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> You can reactivate your membership anytime before the
+                    cancellation date by changing to a new plan.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <button
+                  onClick={() => setShowCancelModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  Keep Membership
+                </button>
+                <button
+                  onClick={handleCancelMembership}
+                  disabled={isCancelling}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isCancelling ? 'Cancelling...' : 'Cancel Membership'}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
       </div>
     </ThemeProvider>
   );

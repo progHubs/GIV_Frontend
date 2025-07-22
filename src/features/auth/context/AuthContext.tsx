@@ -184,6 +184,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       if (response.success && response.user) {
         // Tokens are already stored in authService.login
         dispatch({ type: 'AUTH_SUCCESS', payload: response.user });
+
+        // Handle redirect after login
+        const redirectPath = sessionStorage.getItem('redirectAfterLogin');
+        if (redirectPath && window.location.pathname !== redirectPath) {
+          sessionStorage.removeItem('redirectAfterLogin');
+          // Use setTimeout to avoid immediate redirect issues
+          setTimeout(() => {
+            window.location.href = redirectPath;
+          }, 100);
+        }
       } else {
         throw new Error('Login failed');
       }
