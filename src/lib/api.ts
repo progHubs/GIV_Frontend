@@ -239,13 +239,29 @@ export const api = {
     return response.data;
   },
 
-  // File upload with multipart/form-data
+  // File upload with multipart/form-data (POST)
   upload: async <T = any>(
     url: string,
     formData: FormData,
     config?: AxiosRequestConfig
   ): Promise<T> => {
     const response = await apiClient.post<T>(url, formData, {
+      ...config,
+      headers: {
+        ...config?.headers,
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // File upload with multipart/form-data (PUT)
+  uploadPut: async <T = any>(
+    url: string,
+    formData: FormData,
+    config?: AxiosRequestConfig
+  ): Promise<T> => {
+    const response = await apiClient.put<T>(url, formData, {
       ...config,
       headers: {
         ...config?.headers,

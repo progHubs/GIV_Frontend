@@ -6,35 +6,62 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
-import type { Campaign, CampaignFormData, CampaignCategory, SuccessStory } from '../../types';
+import type { Campaign, CampaignFormData, CampaignCategory } from '../../types';
+import { DEFAULT_VOLUNTEER_ROLES } from '../../types/campaign';
+import { FileUpload } from '../ui/FileUpload';
+import { validateFile } from '../../lib/uploadApi';
 
 interface CampaignFormProps {
   mode: 'create' | 'edit';
   campaign?: Campaign;
-  onSubmit: (data: CampaignFormData) => Promise<void>;
+  onSubmit: (data: CampaignFormData, files?: { image?: File; video?: File }) => Promise<void>;
   onCancel: () => void;
 }
 
 const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, onCancel }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // File upload states
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(campaign?.image_url || null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(campaign?.video_url || null);
+  const [fileErrors, setFileErrors] = useState<{ image?: string; video?: string }>({});
   // Helper function to safely parse success stories
-  const parseSuccessStories = (stories: any): SuccessStory[] => {
-    if (!stories) return [];
-    if (Array.isArray(stories)) return stories;
-    if (typeof stories === 'string') {
-      try {
-        const parsed = JSON.parse(stories);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
+  // const parseSuccessStories = (stories: any): SuccessStory[] => {
+  //   if (!stories) return [];
+  //   if (Array.isArray(stories)) return stories;
+  //   if (typeof stories === 'string') {
+  //     try {
+  //       const parsed = JSON.parse(stories);
+  //       return Array.isArray(parsed) ? parsed : [];
+  //     } catch {
+  //       return [];
+  //     }
+  //   }
+  //   return [];
+  // };
+
+  // const [successStories, setSuccessStories] = useState<SuccessStory[]>(
+  //   parseSuccessStories(campaign?.success_stories)
+  // );
+
+  // Helper function to safely parse volunteer roles
+  const parseVolunteerRoles = (roles: any): string[] => {
+    if (!roles) return DEFAULT_VOLUNTEER_ROLES.slice();
+    if (Array.isArray(roles)) return roles;
+    if (typeof roles === 'string') {
+      return roles
+        .split(',')
+        .map(role => role.trim())
+        .filter(role => role.length > 0);
     }
-    return [];
+    return DEFAULT_VOLUNTEER_ROLES.slice();
   };
 
-  const [successStories, setSuccessStories] = useState<SuccessStory[]>(
-    parseSuccessStories(campaign?.success_stories)
+  const [selectedVolunteerRoles, setSelectedVolunteerRoles] = useState<string[]>(
+    parseVolunteerRoles(campaign?.volunteer_roles)
   );
 
   // Helper function to safely format date for input
@@ -102,19 +129,19 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
           language: campaign.language || 'en',
           is_active: campaign.is_active,
           is_featured: campaign.is_featured,
-          success_stories: parseSuccessStories(campaign.success_stories),
+          // success_stories: parseSuccessStories(campaign.success_stories),
         }
       : {
           language: 'en',
           is_active: true,
           is_featured: false,
           progress_bar_color: '#3B82F6',
-          success_stories: [],
+          // success_stories: [],
         },
   });
 
   const categories: { value: CampaignCategory; label: string }[] = [
-    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'medical_outreach', label: 'Medical Outreach' },
     { value: 'education', label: 'Education' },
     { value: 'community_development', label: 'Community Development' },
     { value: 'emergency_relief', label: 'Emergency Relief' },
@@ -126,31 +153,31 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
   ];
 
   // Success Stories Management
-  const addSuccessStory = () => {
-    setSuccessStories([
-      ...successStories,
-      {
-        title: '',
-        description: '',
-        image_url: '',
-        date: new Date().toISOString().split('T')[0],
-      },
-    ]);
-  };
+  // const addSuccessStory = () => {
+  //   setSuccessStories([
+  //     ...successStories,
+  //     {
+  //       title: '',
+  //       description: '',
+  //       image_url: '',
+  //       date: new Date().toISOString().split('T')[0],
+  //     },
+  //   ]);
+  // };
 
-  const updateSuccessStory = (index: number, field: keyof SuccessStory, value: string) => {
-    if (Array.isArray(successStories) && successStories[index]) {
-      const updated = [...successStories];
-      updated[index] = { ...updated[index], [field]: value };
-      setSuccessStories(updated);
-    }
-  };
+  // const updateSuccessStory = (index: number, field: keyof SuccessStory, value: string) => {
+  //   if (Array.isArray(successStories) && successStories[index]) {
+  //     const updated = [...successStories];
+  //     updated[index] = { ...updated[index], [field]: value };
+  //     setSuccessStories(updated);
+  //   }
+  // };
 
-  const removeSuccessStory = (index: number) => {
-    if (Array.isArray(successStories)) {
-      setSuccessStories(successStories.filter((_, i) => i !== index));
-    }
-  };
+  // const removeSuccessStory = (index: number) => {
+  //   if (Array.isArray(successStories)) {
+  //     setSuccessStories(successStories.filter((_, i) => i !== index));
+  //   }
+  // };
 
   const colorOptions = [
     { value: '#3B82F6', label: 'Blue', color: 'bg-blue-500' },
@@ -166,15 +193,21 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
       setLoading(true);
       setError(null);
 
-      // Include success stories in the form data
+      // Include success stories and volunteer roles in the form data
       const formDataWithStories = {
         ...data,
-        success_stories: Array.isArray(successStories)
-          ? successStories.filter(story => story.title.trim() && story.description.trim())
-          : [],
+        // success_stories: Array.isArray(successStories)
+        //   ? successStories.filter(story => story.title.trim() && story.description.trim())
+        //   : [],
+        volunteer_roles: selectedVolunteerRoles.join(','),
       };
 
-      await onSubmit(formDataWithStories);
+      // Prepare files for upload
+      const files: { image?: File; video?: File } = {};
+      if (selectedImage) files.image = selectedImage;
+      if (selectedVideo) files.video = selectedVideo;
+
+      await onSubmit(formDataWithStories, Object.keys(files).length > 0 ? files : undefined);
     } catch (err: any) {
       setError(err.message || 'Failed to save campaign');
     } finally {
@@ -183,6 +216,53 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
   };
 
   const selectedColor = watch('progress_bar_color');
+
+  // File handling functions
+  const handleImageSelect = (files: File | File[]) => {
+    const file = Array.isArray(files) ? files[0] : files;
+    const error = validateFile.image(file);
+    if (error) {
+      setFileErrors(prev => ({ ...prev, image: error }));
+      return;
+    }
+
+    setFileErrors(prev => ({ ...prev, image: undefined }));
+    setSelectedImage(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = e => setImagePreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const handleVideoSelect = (files: File | File[]) => {
+    const file = Array.isArray(files) ? files[0] : files;
+    const error = validateFile.video(file);
+    if (error) {
+      setFileErrors(prev => ({ ...prev, video: error }));
+      return;
+    }
+
+    setFileErrors(prev => ({ ...prev, video: undefined }));
+    setSelectedVideo(file);
+
+    // Create preview
+    const reader = new FileReader();
+    reader.onload = e => setVideoPreview(e.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  const clearImage = () => {
+    setSelectedImage(null);
+    setImagePreview(campaign?.image_url || null);
+    setFileErrors(prev => ({ ...prev, image: undefined }));
+  };
+
+  const clearVideo = () => {
+    setSelectedVideo(null);
+    setVideoPreview(campaign?.video_url || null);
+    setFileErrors(prev => ({ ...prev, video: undefined }));
+  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -371,30 +451,157 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
               </div>
             </div>
 
-            {/* Image URL */}
+            {/* Campaign Image */}
             <div>
-              <label className="block text-sm font-medium text-theme-primary mb-2">Image URL</label>
-              <input
-                type="url"
-                {...register('image_url')}
-                className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/image.jpg"
-              />
+              <label className="block text-sm font-medium text-theme-primary mb-2">
+                Campaign Image
+              </label>
+              <div className="space-y-3">
+                <FileUpload
+                  accept="image/*"
+                  onFileSelect={handleImageSelect}
+                  maxSize={5}
+                  showPreview={false}
+                  placeholder="Click to upload campaign image"
+                  error={fileErrors.image}
+                />
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Campaign preview"
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearImage}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Fallback URL Input */}
+                <div>
+                  <label className="block text-xs text-theme-secondary mb-1">
+                    Or enter image URL
+                  </label>
+                  <input
+                    type="url"
+                    {...register('image_url')}
+                    className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+              </div>
             </div>
 
-            {/* Video URL */}
+            {/* Campaign Video */}
             <div>
-              <label className="block text-sm font-medium text-theme-primary mb-2">Video URL</label>
-              <input
-                type="url"
-                {...register('video_url')}
-                className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="https://example.com/video.mp4"
-              />
+              <label className="block text-sm font-medium text-theme-primary mb-2">
+                Campaign Video
+              </label>
+              <div className="space-y-3">
+                <FileUpload
+                  accept="video/*"
+                  onFileSelect={handleVideoSelect}
+                  maxSize={50}
+                  showPreview={false}
+                  placeholder="Click to upload campaign video"
+                  error={fileErrors.video}
+                />
+
+                {/* Video Preview */}
+                {videoPreview && (
+                  <div className="relative">
+                    <video
+                      src={videoPreview}
+                      controls
+                      className="w-full h-48 object-cover rounded-lg border"
+                    />
+                    <button
+                      type="button"
+                      onClick={clearVideo}
+                      className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                )}
+
+                {/* Fallback URL Input */}
+                <div>
+                  <label className="block text-xs text-theme-secondary mb-1">
+                    Or enter video URL
+                  </label>
+                  <input
+                    type="url"
+                    {...register('video_url')}
+                    className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                    placeholder="https://example.com/video.mp4"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Volunteer Roles */}
+            <div className="col-span-2">
+              <label className="block text-sm font-medium text-theme-primary mb-2">
+                Required Volunteer Roles
+              </label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 max-h-48 overflow-y-auto border border-theme rounded-lg p-3 bg-theme-background">
+                {DEFAULT_VOLUNTEER_ROLES.map(role => (
+                  <label key={role} className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={selectedVolunteerRoles.includes(role)}
+                      onChange={e => {
+                        if (e.target.checked) {
+                          setSelectedVolunteerRoles([...selectedVolunteerRoles, role]);
+                        } else {
+                          setSelectedVolunteerRoles(selectedVolunteerRoles.filter(r => r !== role));
+                        }
+                      }}
+                      className="rounded border-theme text-blue-500 focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-theme-primary">{role}</span>
+                  </label>
+                ))}
+              </div>
+              <div className="mt-2 text-sm text-theme-muted">
+                Selected: {selectedVolunteerRoles.length} role(s)
+              </div>
             </div>
 
             {/* Success Stories */}
-            <div className="col-span-2">
+            {/* <div className="col-span-2">
               <div className="flex items-center justify-between mb-4">
                 <label className="block text-sm font-medium text-theme-primary">
                   Success Stories
@@ -449,9 +656,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
                               className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-surface text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                               placeholder="Success story title"
                             />
-                          </div>
+                          </div> */}
 
-                          <div>
+            {/* <div>
                             <label className="block text-sm font-medium text-theme-primary mb-1">
                               Date
                             </label>
@@ -495,7 +702,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
                     ))}
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Language */}
             <div>

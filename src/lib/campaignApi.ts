@@ -203,17 +203,75 @@ export const campaignApi = {
 
   // Admin-only endpoints
   admin: {
-    // Create campaign
-    createCampaign: async (data: CampaignFormData): Promise<CampaignResponse> => {
-      return api.post<CampaignResponse>(ENDPOINTS.campaigns, data);
+    // Create campaign with optional file uploads
+    createCampaign: async (
+      data: CampaignFormData,
+      files?: { image?: File; video?: File }
+    ): Promise<CampaignResponse> => {
+      if (files && (files.image || files.video)) {
+        // Use FormData for file uploads
+        const formData = new FormData();
+
+        // Append all campaign data
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            if (Array.isArray(value)) {
+              formData.append(key, JSON.stringify(value));
+            } else {
+              formData.append(key, String(value));
+            }
+          }
+        });
+
+        // Append files
+        if (files.image) {
+          formData.append('image', files.image);
+        }
+        if (files.video) {
+          formData.append('video', files.video);
+        }
+
+        return api.upload<CampaignResponse>(ENDPOINTS.campaigns, formData);
+      } else {
+        // Use regular JSON for data-only requests
+        return api.post<CampaignResponse>(ENDPOINTS.campaigns, data);
+      }
     },
 
-    // Update campaign
+    // Update campaign with optional file uploads
     updateCampaign: async (
       id: string,
-      data: Partial<CampaignFormData>
+      data: Partial<CampaignFormData>,
+      files?: { image?: File; video?: File }
     ): Promise<CampaignResponse> => {
-      return api.put<CampaignResponse>(ENDPOINTS.campaignById(id), data);
+      if (files && (files.image || files.video)) {
+        // Use FormData for file uploads
+        const formData = new FormData();
+
+        // Append all campaign data
+        Object.entries(data).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            if (Array.isArray(value)) {
+              formData.append(key, JSON.stringify(value));
+            } else {
+              formData.append(key, String(value));
+            }
+          }
+        });
+
+        // Append files
+        if (files.image) {
+          formData.append('image', files.image);
+        }
+        if (files.video) {
+          formData.append('video', files.video);
+        }
+
+        return api.uploadPut<CampaignResponse>(ENDPOINTS.campaignById(id), formData);
+      } else {
+        // Use regular JSON for data-only requests
+        return api.put<CampaignResponse>(ENDPOINTS.campaignById(id), data);
+      }
     },
 
     // Delete campaign

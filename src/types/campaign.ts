@@ -2,9 +2,29 @@
 
 import type { BaseEntity } from './api';
 
+// Default Volunteer Roles for Campaigns
+export const DEFAULT_VOLUNTEER_ROLES = [
+  'Dermatologist',
+  'Radiologist',
+  'Gynecologist',
+  'Data Collectors',
+  'Internists',
+  'Optometrists',
+  'Public Health',
+  'Medical Student',
+  'General Practitioners',
+  'Pharmacist',
+  'Laboratory professionals',
+  'Intern',
+  'Nurse',
+  'Social worker',
+] as const;
+
+export type VolunteerRole = (typeof DEFAULT_VOLUNTEER_ROLES)[number];
+
 // Campaign Categories
 export type CampaignCategory =
-  | 'healthcare'
+  | 'medical_outreach'
   | 'education'
   | 'community_development'
   | 'emergency_relief'
@@ -42,7 +62,10 @@ export interface Campaign extends BaseEntity {
   image_url?: string;
   video_url?: string;
   donor_count: number;
-  success_stories?: SuccessStory[];
+  // success_stories?: SuccessStory[];
+  volunteer_roles?: string | string[];
+  volunteer_count?: number;
+  volunteer_hours_total?: number;
   language: string;
   translation_group_id: string;
   progress_percentage: number;
@@ -65,7 +88,8 @@ export interface CampaignFormData {
   progress_bar_color?: string;
   image_url?: string;
   video_url?: string;
-  success_stories?: SuccessStory[];
+  // success_stories?: SuccessStory[];
+  volunteer_roles?: string | string[];
   language?: string;
   is_active?: boolean;
   is_featured?: boolean;

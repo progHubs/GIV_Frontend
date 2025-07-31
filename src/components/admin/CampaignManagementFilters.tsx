@@ -14,7 +14,7 @@ interface CampaignManagementFiltersProps {
 }
 
 const categories: Array<{ value: CampaignCategory; label: string }> = [
-  { value: 'healthcare', label: 'Healthcare' },
+  { value: 'medical_outreach', label: 'Medical Outreach' },
   { value: 'education', label: 'Education' },
   { value: 'community_development', label: 'Community Development' },
   { value: 'emergency_relief', label: 'Emergency Relief' },
@@ -176,7 +176,9 @@ const CampaignManagementFilters: React.FC<CampaignManagementFiltersProps> = ({
           whileTap={{ scale: 0.98 }}
           onClick={() => handleStatusFilter('all')}
           className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
-            filters.is_active === undefined && filters.is_featured === undefined && filters.is_completed === undefined
+            filters.is_active === undefined &&
+            filters.is_featured === undefined &&
+            filters.is_completed === undefined
               ? 'bg-blue-500 text-white shadow-lg'
               : 'bg-theme-surface text-theme-primary border border-theme hover:bg-theme-background'
           }`}
@@ -284,7 +286,9 @@ const CampaignManagementFilters: React.FC<CampaignManagementFiltersProps> = ({
                 </select>
                 <select
                   value={filters.sortOrder || 'desc'}
-                  onChange={e => onFiltersChange({ sortOrder: e.target.value as 'asc' | 'desc', page: 1 })}
+                  onChange={e =>
+                    onFiltersChange({ sortOrder: e.target.value as 'asc' | 'desc', page: 1 })
+                  }
                   className="px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
                   <option value="desc">Descending</option>

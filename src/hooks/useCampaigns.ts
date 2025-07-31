@@ -70,7 +70,8 @@ export const useCreateCampaign = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (data: any) => campaignApi.admin.createCampaign(data),
+    mutationFn: ({ data, files }: { data: any; files?: { image?: File; video?: File } }) =>
+      campaignApi.admin.createCampaign(data, files),
     onSuccess: () => {
       // Invalidate and refetch campaigns and stats
       queryClient.invalidateQueries({ queryKey: queryKeys.campaigns.all });
@@ -82,8 +83,15 @@ export const useUpdateCampaign = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: any }) =>
-      campaignApi.admin.updateCampaign(id, data),
+    mutationFn: ({
+      id,
+      data,
+      files,
+    }: {
+      id: string;
+      data: any;
+      files?: { image?: File; video?: File };
+    }) => campaignApi.admin.updateCampaign(id, data, files),
     onSuccess: () => {
       // Invalidate and refetch campaigns and stats
       queryClient.invalidateQueries({ queryKey: queryKeys.campaigns.all });

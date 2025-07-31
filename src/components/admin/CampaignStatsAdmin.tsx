@@ -138,7 +138,7 @@ const CampaignStatsAdmin: React.FC<CampaignStatsAdminProps> = ({ stats }) => {
     percentage: ((categoryData.count / stats.total_campaigns) * 100).toFixed(1),
     color:
       {
-        healthcare: 'bg-red-500',
+        medical_outreach: 'bg-red-500',
         education: 'bg-blue-500',
         community_development: 'bg-purple-500',
         emergency_relief: 'bg-orange-500',

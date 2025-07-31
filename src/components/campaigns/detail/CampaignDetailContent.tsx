@@ -7,14 +7,14 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCampaignDonations } from '../../../hooks/useDonations';
 import { useStripeUtils } from '../../../hooks/useStripe';
-import type { Campaign, SuccessStory } from '../../../types';
+import type { Campaign } from '../../../types';
 
 interface CampaignDetailContentProps {
   campaign: Campaign;
 }
 
 const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'stories' | 'donors'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'donors'>('overview');
 
   // Fetch real donation data for this campaign
   const { data: donationsData, isLoading: donationsLoading } = useCampaignDonations(campaign.id, {
@@ -25,22 +25,22 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
   const { formatCurrency } = useStripeUtils();
 
   // Helper function to safely parse success stories
-  const parseSuccessStories = (stories: any): SuccessStory[] => {
-    if (!stories) return [];
-    if (Array.isArray(stories)) return stories;
-    if (typeof stories === 'string') {
-      try {
-        const parsed = JSON.parse(stories);
-        return Array.isArray(parsed) ? parsed : [];
-      } catch {
-        return [];
-      }
-    }
-    return [];
-  };
+  // const parseSuccessStories = (stories: any): SuccessStory[] => {
+  //   if (!stories) return [];
+  //   if (Array.isArray(stories)) return stories;
+  //   if (typeof stories === 'string') {
+  //     try {
+  //       const parsed = JSON.parse(stories);
+  //       return Array.isArray(parsed) ? parsed : [];
+  //     } catch {
+  //       return [];
+  //     }
+  //   }
+  //   return [];
+  // };
 
   // Get safely parsed success stories
-  const successStories = parseSuccessStories(campaign.success_stories);
+  // const successStories = parseSuccessStories(campaign.success_stories);
 
   // Mock data for demonstration
   const impactMetrics = [
@@ -133,7 +133,7 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
         <nav className="flex space-x-8">
           {[
             { key: 'overview', label: 'Overview' },
-            { key: 'stories', label: 'Success Stories' },
+            // { key: 'stories', label: 'Success Stories' },
             { key: 'donors', label: 'Donors' },
           ].map(tab => (
             <button
@@ -219,67 +219,8 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
           </motion.div>
         )}
 
-        {/* Success Stories Tab */}
-        {activeTab === 'stories' && (
-          <motion.div
-            key="stories"
-            variants={tabVariants}
-            initial="hidden"
-            animate="visible"
-            className="space-y-6"
-          >
-            <div className="bg-theme-surface rounded-2xl p-6 shadow-lg border border-theme">
-              <h2 className="text-2xl font-bold text-theme-primary mb-6">Success Stories</h2>
-              {successStories.length > 0 ? (
-                <div className="space-y-6">
-                  {successStories.map((story, index) => (
-                    <motion.div
-                      key={index}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="border border-theme rounded-xl p-6 hover:shadow-md transition-shadow duration-200"
-                    >
-                      <div className="flex flex-col md:flex-row gap-6">
-                        {/* Story Image */}
-                        {story.image_url && (
-                          <div className="md:w-1/3">
-                            <img
-                              src={story.image_url}
-                              alt={story.title}
-                              className="w-full h-48 md:h-32 object-cover rounded-lg"
-                            />
-                          </div>
-                        )}
-
-                        {/* Story Content */}
-                        <div className={story.image_url ? 'md:w-2/3' : 'w-full'}>
-                          <div className="flex items-start justify-between mb-3">
-                            <h3 className="text-lg font-semibold text-theme-primary">
-                              {story.title}
-                            </h3>
-                            <span className="text-sm text-theme-muted flex-shrink-0 ml-4">
-                              {formatDate(story.date)}
-                            </span>
-                          </div>
-                          <p className="text-theme-muted leading-relaxed">{story.description}</p>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-4xl mb-4">🌟</div>
-                  <div className="text-theme-muted mb-2">No success stories yet</div>
-                  <p className="text-sm text-theme-muted">
-                    Success stories will appear here as the campaign achieves its goals.
-                  </p>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
+        {/* Success Stories Tab - COMMENTED OUT */}
+        {/* Success Stories functionality has been disabled */}
 
         {/* Donors Tab */}
         {activeTab === 'donors' && (

@@ -43,7 +43,7 @@ const CampaignFilters: React.FC<CampaignFiltersProps> = ({
   }, [searchQuery, filters.search, onFiltersChange]);
 
   const categories: { value: CampaignCategory; label: string }[] = [
-    { value: 'healthcare', label: 'Healthcare' },
+    { value: 'medical_outreach', label: 'Medical Outreach' },
     { value: 'education', label: 'Education' },
     { value: 'community_development', label: 'Community Development' },
     { value: 'emergency_relief', label: 'Emergency Relief' },

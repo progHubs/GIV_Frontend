@@ -55,9 +55,9 @@ const CampaignManagement: React.FC = () => {
   };
 
   // Handle campaign creation
-  const handleCreateCampaign = async (data: any) => {
+  const handleCreateCampaign = async (data: any, files?: { image?: File; video?: File }) => {
     try {
-      await createCampaignMutation.mutateAsync(data);
+      await createCampaignMutation.mutateAsync({ data, files });
       setShowCreateForm(false);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to create campaign');
@@ -65,9 +65,13 @@ const CampaignManagement: React.FC = () => {
   };
 
   // Handle campaign update
-  const handleUpdateCampaign = async (id: string, data: any) => {
+  const handleUpdateCampaign = async (
+    id: string,
+    data: any,
+    files?: { image?: File; video?: File }
+  ) => {
     try {
-      await updateCampaignMutation.mutateAsync({ id, data });
+      await updateCampaignMutation.mutateAsync({ id, data, files });
       setEditingCampaign(null);
     } catch (err: any) {
       throw new Error(err.message || 'Failed to update campaign');
@@ -202,7 +206,7 @@ const CampaignManagement: React.FC = () => {
         <CampaignForm
           mode="edit"
           campaign={editingCampaign}
-          onSubmit={data => handleUpdateCampaign(editingCampaign.id, data)}
+          onSubmit={(data, files) => handleUpdateCampaign(editingCampaign.id, data, files)}
           onCancel={() => setEditingCampaign(null)}
         />
       )}
