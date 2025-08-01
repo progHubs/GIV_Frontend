@@ -10,30 +10,39 @@ export type VolunteerStatus = 'pending' | 'approved' | 'rejected' | 'withdrawn';
 export type VolunteerRole = 'general' | 'medical' | 'coordinator' | 'specialist';
 export type ApplicationStatus = 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected';
 
-// Volunteer Profile Interface
+// Volunteer Profile Interface (matching backend schema)
 export interface VolunteerProfile extends BaseEntity {
   user_id: string;
-  phone_number?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  medical_conditions?: string;
-  skills: string[];
-  availability: string[];
-  preferred_roles: VolunteerRole[];
-  background_check_status: 'pending' | 'approved' | 'rejected';
-  background_check_date?: string;
-  is_active: boolean;
-  
-  // Medical specialization fields
-  is_medical_professional: boolean;
-  medical_license_number?: string;
-  medical_specialization?: string;
+  location?: string;
+  volunteer_roles?: string;
+  registered_campaigns_count?: number;
+  active_campaigns_count?: number;
+  completed_campaigns_count?: number;
+  rating?: number;
+  is_licensed_practitioner?: boolean;
+  license_number?: string;
   license_expiry_date?: string;
-  medical_credentials?: string[];
-  
+  medical_education_institution?: string;
+  medical_education_year?: number;
+  medical_education_degree?: string;
+  referral_source?: string;
+  languages_spoken?: string;
+  availability_details?: string;
+
   // Relationships
   users?: User;
-  campaign_volunteers?: CampaignVolunteer[];
+  volunteer_documents?: VolunteerDocument[];
+}
+
+// Volunteer Document Interface
+export interface VolunteerDocument extends BaseEntity {
+  volunteer_id: string;
+  document_type: 'license' | 'certificate' | 'cv' | 'reference_letter' | 'other';
+  document_name: string;
+  file_path: string;
+  file_size?: number;
+  mime_type?: string;
+  upload_date: string;
 }
 
 // Campaign Volunteer Interface
@@ -48,7 +57,7 @@ export interface CampaignVolunteer extends BaseEntity {
   hours_completed?: number;
   start_date?: string;
   end_date?: string;
-  
+
   // Relationships
   campaigns?: Campaign;
   users?: User;
@@ -64,7 +73,7 @@ export interface VolunteerHours extends BaseEntity {
   description?: string;
   verified_by?: string;
   verified_at?: string;
-  
+
   // Relationships
   campaign_volunteers?: CampaignVolunteer;
 }
@@ -87,20 +96,19 @@ export interface VolunteerApplicationRequest {
   end_date?: string;
 }
 
-// Volunteer Profile Update Request
+// Volunteer Profile Update Request (matching backend schema)
 export interface VolunteerProfileUpdateRequest {
-  phone_number?: string;
-  emergency_contact_name?: string;
-  emergency_contact_phone?: string;
-  medical_conditions?: string;
-  skills?: string[];
-  availability?: string[];
-  preferred_roles?: VolunteerRole[];
-  is_medical_professional?: boolean;
-  medical_license_number?: string;
-  medical_specialization?: string;
+  location?: string;
+  volunteer_roles?: string[];
+  is_licensed_practitioner?: boolean;
+  license_number?: string;
   license_expiry_date?: string;
-  medical_credentials?: string[];
+  medical_education_institution?: string;
+  medical_education_year?: number;
+  medical_education_degree?: string;
+  referral_source?: string;
+  languages_spoken?: string;
+  availability_details?: string;
 }
 
 // Volunteer Hours Log Request
@@ -223,7 +231,10 @@ export interface VolunteerStatusCardProps {
 }
 
 // Predefined configurations
-export const VOLUNTEER_ROLES: Record<VolunteerRole, { name: string; description: string; color: string }> = {
+export const VOLUNTEER_ROLES: Record<
+  VolunteerRole,
+  { name: string; description: string; color: string }
+> = {
   general: {
     name: 'General Volunteer',
     description: 'General support and assistance',
@@ -246,7 +257,10 @@ export const VOLUNTEER_ROLES: Record<VolunteerRole, { name: string; description:
   },
 };
 
-export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, { label: string; color: string }> = {
+export const APPLICATION_STATUS_LABELS: Record<
+  ApplicationStatus,
+  { label: string; color: string }
+> = {
   draft: {
     label: 'Draft',
     color: 'gray',

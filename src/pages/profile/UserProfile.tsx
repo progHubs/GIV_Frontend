@@ -12,10 +12,12 @@ import { ThemeProvider } from '../../theme';
 import ModernNavigation from '../../components/navigation/ModernNavigation';
 import { useAuth } from '../../features/auth/context/AuthContext';
 import { DonationHistory, DonationStats } from '../../components/donations';
+import { IntegratedVolunteerDashboard } from '../../components/volunteers';
 import ProfileSidebar from '../../components/profile/ProfileSidebar';
 import MembershipBadge from '../../components/common/MembershipBadge';
 import { useDonorProfile } from '../../hooks/useDonations';
 import { useUserMembership, useReactivateMembership } from '../../hooks/useMembership';
+import { useVolunteerProfile, useVolunteerApplications } from '../../hooks/useVolunteer';
 import { api } from '../../lib/api';
 
 const UserProfile: React.FC = () => {
@@ -32,6 +34,10 @@ const UserProfile: React.FC = () => {
     isLoading: membershipLoading,
   } = useUserMembership();
   const reactivateMembershipMutation = useReactivateMembership();
+
+  // Volunteer data
+  const { data: volunteerProfile } = useVolunteerProfile();
+  const { data: volunteerApplications } = useVolunteerApplications();
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -110,6 +116,7 @@ const UserProfile: React.FC = () => {
   const sections = [
     { id: 'overview', name: 'Overview', icon: '🏠' },
     { id: 'donations', name: 'Donations', icon: '💝' },
+    { id: 'volunteer', name: 'Volunteer Dashboard', icon: '🤝' },
     { id: 'events', name: 'Events', icon: '🎫' },
     { id: 'settings', name: 'Settings', icon: '⚙️' },
   ];
@@ -297,6 +304,9 @@ const UserProfile: React.FC = () => {
             <DonationHistory />
           </div>
         );
+
+      case 'volunteer':
+        return <IntegratedVolunteerDashboard />;
 
       case 'events':
         return (

@@ -16,8 +16,10 @@ const LoginForm: React.FC = () => {
   const { login, isLoading, error, clearError } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
 
-  // Get the intended destination from location state
-  const from = (location.state as any)?.from?.pathname || '/';
+  // Get the intended destination from location state or query parameter
+  const searchParams = new URLSearchParams(location.search);
+  const returnUrl = searchParams.get('returnUrl');
+  const from = returnUrl || (location.state as any)?.from?.pathname || '/';
 
   // Clear any existing errors when component mounts
   useEffect(() => {

@@ -7,6 +7,8 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCampaignDonations } from '../../../hooks/useDonations';
 import { useStripeUtils } from '../../../hooks/useStripe';
+import VolunteerSection from './VolunteerSection';
+import ErrorBoundary from '../../common/ErrorBoundary';
 import type { Campaign } from '../../../types';
 
 interface CampaignDetailContentProps {
@@ -14,7 +16,7 @@ interface CampaignDetailContentProps {
 }
 
 const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign }) => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'donors'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'volunteers' | 'donors'>('overview');
 
   // Fetch real donation data for this campaign
   const { data: donationsData, isLoading: donationsLoading } = useCampaignDonations(campaign.id, {
@@ -133,7 +135,7 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
         <nav className="flex space-x-8">
           {[
             { key: 'overview', label: 'Overview' },
-            // { key: 'stories', label: 'Success Stories' },
+            { key: 'volunteers', label: 'Volunteers' },
             { key: 'donors', label: 'Donors' },
           ].map(tab => (
             <button
@@ -315,6 +317,15 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
                 </div>
               </div>
             </div>
+          </motion.div>
+        )}
+
+        {/* Volunteers Tab */}
+        {activeTab === 'volunteers' && (
+          <motion.div key="volunteers" variants={tabVariants} initial="hidden" animate="visible">
+            <ErrorBoundary>
+              <VolunteerSection campaign={campaign} />
+            </ErrorBoundary>
           </motion.div>
         )}
       </div>
