@@ -230,7 +230,7 @@ const AdminDashboard: React.FC = () => {
         </svg>
       ),
       color: 'bg-orange-500',
-      onClick: () => alert('Content management coming soon!'),
+      onClick: () => navigate('/admin/content'),
     },
   ];
 

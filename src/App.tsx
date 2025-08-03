@@ -56,6 +56,7 @@ import MembershipManagement from './pages/admin/MembershipManagement';
 import MembershipPlanDetail from './pages/admin/MembershipPlanDetail';
 import VolunteerManagement from './pages/admin/VolunteerManagement';
 import VolunteerDetail from './pages/admin/VolunteerDetail';
+import ContentManagement from './pages/admin/ContentManagement';
 
 // Component to handle legacy reset password URLs with query parameters
 const ResetPasswordRedirect = () => {
@@ -204,6 +205,14 @@ function App() {
                 element={
                   <ProtectedRoute requiredRole="admin">
                     <VolunteerDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/content"
+                element={
+                  <ProtectedRoute requiredRole="admin">
+                    <ContentManagement />
                   </ProtectedRoute>
                 }
               />
