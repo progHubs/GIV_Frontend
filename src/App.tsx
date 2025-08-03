@@ -27,6 +27,8 @@ import ResetPasswordPage from './features/auth/pages/ResetPasswordPage';
 import HomePage from './pages/HomePage';
 import CampaignsPage from './pages/CampaignsPage';
 import CampaignDetailPage from './pages/CampaignDetailPage';
+import PostsPage from './pages/PostsPage';
+import PostDetailPage from './pages/PostDetailPage';
 import NotFoundPage from './pages/NotFoundPage';
 import UnauthorizedPage from './pages/UnauthorizedPage';
 
@@ -84,6 +86,8 @@ function App() {
               <Route path="/" element={<HomePage />} />
               <Route path="/campaigns" element={<CampaignsPage />} />
               <Route path="/campaigns/:id" element={<CampaignDetailPage />} />
+              <Route path="/posts" element={<PostsPage />} />
+              <Route path="/posts/:slug" element={<PostDetailPage />} />
 
               {/* Donation routes - Public */}
               <Route path="/donation-success" element={<DonationSuccess />} />

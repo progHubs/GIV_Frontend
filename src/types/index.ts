@@ -21,5 +21,8 @@ export * from './volunteer';
 // Advanced filtering types
 export * from './filters';
 
+// Content management types
+export * from './content';
+
 // Re-export commonly used React types
 export type { ReactNode, ComponentProps, FC } from 'react';

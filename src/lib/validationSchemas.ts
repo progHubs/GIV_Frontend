@@ -120,6 +120,167 @@ export const updateProfileSchema = z.object({
   language_preference: languageSchema
 });
 
+// ===================================
+// CONTENT MANAGEMENT SCHEMAS
+// ===================================
+
+// Slug validation schema
+const slugSchema = z
+  .string()
+  .min(1, 'Slug is required')
+  .max(255, 'Slug must not exceed 255 characters')
+  .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, 'Slug must contain only lowercase letters, numbers, and hyphens')
+  .refine((slug) => !slug.startsWith('-') && !slug.endsWith('-'), 'Slug cannot start or end with a hyphen');
+
+// Post title validation schema
+const postTitleSchema = z
+  .string()
+  .min(1, 'Title is required')
+  .min(3, 'Title must be at least 3 characters')
+  .max(255, 'Title must not exceed 255 characters')
+  .transform((title) => title.trim());
+
+// Post content validation schema
+const postContentSchema = z
+  .string()
+  .optional()
+  .transform((content) => content?.trim() || undefined);
+
+// Content blocks validation schema
+const contentBlocksSchema = z
+  .object({
+    version: z.string().min(1, 'Content blocks version is required'),
+    blocks: z.array(z.object({
+      id: z.string().min(1, 'Block ID is required'),
+      type: z.enum([
+        'header', 'paragraph', 'list', 'image', 'video', 'quote',
+        'table', 'code', 'delimiter', 'warning', 'embed', 'checklist', 'attaches'
+      ], { errorMap: () => ({ message: 'Invalid block type' }) }),
+      data: z.record(z.any())
+    }))
+  })
+  .optional();
+
+// Post type validation schema
+const postTypeSchema = z
+  .enum(['blog', 'news', 'press_release'], {
+    errorMap: () => ({ message: 'Invalid post type. Must be blog, news, or press_release' })
+  });
+
+// Language validation schema
+const contentLanguageSchema = z
+  .enum(['en', 'am'], {
+    errorMap: () => ({ message: 'Invalid language. Must be "en" or "am"' })
+  })
+  .optional()
+  .default('en');
+
+// Tags validation schema
+const tagsSchema = z
+  .string()
+  .optional()
+  .transform((tags) => {
+    if (!tags || tags.trim() === '') return undefined;
+    // Split by comma, trim each tag, remove empty tags, and rejoin
+    const tagArray = tags
+      .split(',')
+      .map(tag => tag.trim())
+      .filter(tag => tag.length > 0);
+    return tagArray.length > 0 ? tagArray.join(',') : undefined;
+  })
+  .refine((tags) => {
+    if (!tags) return true;
+    const tagArray = tags.split(',');
+    return tagArray.every(tag => tag.length >= 2 && tag.length <= 50);
+  }, 'Each tag must be between 2 and 50 characters');
+
+// URL validation schema
+const urlSchema = z
+  .string()
+  .optional()
+  .refine((url) => {
+    if (!url || url.trim() === '') return true;
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }, 'Invalid URL format');
+
+// Post creation schema
+export const createPostSchema = z.object({
+  title: postTitleSchema,
+  slug: slugSchema,
+  content: postContentSchema,
+  content_blocks: contentBlocksSchema,
+  post_type: postTypeSchema,
+  feature_image: urlSchema,
+  video_url: urlSchema,
+  is_featured: z.boolean().optional().default(false),
+  tags: tagsSchema,
+  language: contentLanguageSchema
+});
+
+// Post update schema
+export const updatePostSchema = z.object({
+  title: postTitleSchema.optional(),
+  slug: slugSchema.optional(),
+  content: postContentSchema,
+  content_blocks: contentBlocksSchema,
+  post_type: postTypeSchema.optional(),
+  feature_image: urlSchema,
+  video_url: urlSchema,
+  is_featured: z.boolean().optional(),
+  tags: tagsSchema,
+  language: contentLanguageSchema
+});
+
+// Comment validation schema
+export const commentSchema = z.object({
+  content: z
+    .string()
+    .min(1, 'Comment content is required')
+    .min(3, 'Comment must be at least 3 characters')
+    .max(1000, 'Comment must not exceed 1000 characters')
+    .transform((content) => content.trim())
+});
+
+// Comment update schema
+export const updateCommentSchema = z.object({
+  content: z
+    .string()
+    .min(1, 'Comment content is required')
+    .min(3, 'Comment must be at least 3 characters')
+    .max(1000, 'Comment must not exceed 1000 characters')
+    .transform((content) => content.trim())
+});
+
+// Post query schema
+export const postQuerySchema = z.object({
+  page: z.number().min(1).optional().default(1),
+  limit: z.number().min(1).max(100).optional().default(10),
+  post_type: postTypeSchema.optional(),
+  language: contentLanguageSchema,
+  title_search: z.string().optional(),
+  content_search: z.string().optional(),
+  slug_search: z.string().optional(),
+  created_after: z.string().optional(),
+  created_before: z.string().optional(),
+  updated_after: z.string().optional(),
+  updated_before: z.string().optional(),
+  author_id: z.string().optional(),
+  author_name: z.string().optional(),
+  sort_by: z.enum(['created_at', 'updated_at', 'title', 'views', 'likes']).optional().default('created_at'),
+  sort_order: z.enum(['asc', 'desc']).optional().default('desc'),
+  has_image: z.boolean().optional(),
+  content_length_min: z.number().min(0).optional(),
+  content_length_max: z.number().min(0).optional(),
+  is_featured: z.boolean().optional(),
+  tags: z.string().optional(),
+  exclude_id: z.string().optional()
+});
+
 // Type exports for TypeScript
 export type RegisterFormData = z.infer<typeof registerSchema>;
 export type LoginFormData = z.infer<typeof loginSchema>;
@@ -127,3 +288,10 @@ export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 export type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
+
+// Content management type exports
+export type CreatePostFormData = z.infer<typeof createPostSchema>;
+export type UpdatePostFormData = z.infer<typeof updatePostSchema>;
+export type CommentFormData = z.infer<typeof commentSchema>;
+export type UpdateCommentFormData = z.infer<typeof updateCommentSchema>;
+export type PostQueryFormData = z.infer<typeof postQuerySchema>;

@@ -84,6 +84,7 @@ const ModernNavigation: React.FC = () => {
       { name: 'About Us', href: '/about' },
       { name: 'Programs', href: '/programs' },
       { name: 'Campaigns', href: '/campaigns' },
+      { name: 'Posts', href: '/posts' },
       { name: 'Events', href: '/events' },
       { name: 'Contact', href: '/contact' },
     ];
