@@ -513,7 +513,7 @@ export function useCreateVolunteerProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (profileData: CreateVolunteerProfileRequest) =>
+    mutationFn: (profileData: CreateVolunteerProfileRequest & { files?: File[] }) =>
       userApi.createVolunteerProfile(profileData),
     onSuccess: data => {
       // Update current volunteer profile cache
@@ -538,7 +538,7 @@ export function useUpdateCurrentVolunteerProfile() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (profileData: UpdateVolunteerProfileRequest) =>
+    mutationFn: (profileData: UpdateVolunteerProfileRequest & { files?: File[] }) =>
       userApi.updateCurrentVolunteerProfile(profileData),
     onSuccess: data => {
       // Update current volunteer profile cache

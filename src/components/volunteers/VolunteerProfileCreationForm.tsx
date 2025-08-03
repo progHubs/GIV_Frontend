@@ -66,6 +66,7 @@ const VolunteerProfileCreationForm: React.FC<VolunteerProfileCreationFormProps> 
         volunteer_roles: data.volunteer_roles || [],
       };
 
+      // Pass data and files together
       await onSubmit(processedData, files.length > 0 ? files : undefined);
     } catch (err: any) {
       setError(err.message || 'Failed to create volunteer profile');

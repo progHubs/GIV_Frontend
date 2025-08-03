@@ -25,7 +25,9 @@ const ENDPOINTS = {
   campaignVolunteers: (id: string) => `/campaigns/${id}/volunteers`,
   applyVolunteer: (id: string) => `/campaigns/${id}/volunteers/apply`,
   updateVolunteerStatus: (campaignId: string, userId: string) =>
-    `/campaigns/${campaignId}/volunteers/${userId}/status`,
+    `/campaigns/${campaignId}/volunteers/${userId}`,
+  downloadCertificate: (campaignId: string, userId: string) =>
+    `/campaigns/${campaignId}/volunteers/${userId}/certificate`,
   logVolunteerHours: (volunteerId: string) => `/volunteers/${volunteerId}/hours`,
   volunteerStats: (userId?: string) =>
     userId ? `/volunteers/stats/${userId}` : '/volunteers/stats',
@@ -181,6 +183,11 @@ export const campaignApi = {
     return api.put(ENDPOINTS.updateVolunteerStatus(campaignId, userId), statusData);
   },
 
+  // Download certificate for completed volunteer
+  downloadCertificate: async (campaignId: string, userId: string) => {
+    return api.get(ENDPOINTS.downloadCertificate(campaignId, userId));
+  },
+
   // Log volunteer hours
   logVolunteerHours: async (campaignVolunteerId: string, hoursData: any) => {
     return api.post(ENDPOINTS.logVolunteerHours(campaignVolunteerId), hoursData);
@@ -194,6 +201,30 @@ export const campaignApi = {
   // Get user's volunteer campaigns
   getUserVolunteerCampaigns: async () => {
     return api.get(ENDPOINTS.userVolunteerCampaigns);
+  },
+
+  // Get campaign applications for a specific volunteer (Admin only)
+  getVolunteerCampaignApplications: async (userId: string, filters: any = {}) => {
+    const params = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          if (value.length > 0) {
+            params.append(key, value.join(','));
+          }
+        } else {
+          params.append(key, String(value));
+        }
+      }
+    });
+
+    const queryString = params.toString();
+    const url = queryString
+      ? `/volunteers/${userId}/campaign-applications?${queryString}`
+      : `/volunteers/${userId}/campaign-applications`;
+
+    return api.get(url);
   },
 
   // Get campaign filter options
@@ -298,6 +329,21 @@ export const campaignApi = {
         translation
       );
     },
+  },
+
+  // Update volunteer's campaign application status (Admin only)
+  updateVolunteerCampaignStatus: async (userId: string, campaignId: string, status: string, notes?: string) => {
+    return api.put(`/volunteers/${userId}/campaigns/${campaignId}/status`, {
+      status,
+      notes
+    });
+  },
+
+  // Issue certificate for completed volunteer (Admin only)
+  issueCertificate: async (userId: string, campaignId: string, certificateData: any) => {
+    return api.post(`/volunteers/${userId}/campaigns/${campaignId}/certificate`, {
+      certificateData
+    });
   },
 };
 

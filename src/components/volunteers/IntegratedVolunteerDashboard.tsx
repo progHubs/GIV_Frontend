@@ -20,7 +20,12 @@ import type {
   VolunteerProfileUpdateRequest,
   CampaignVolunteer,
 } from '../../types/volunteer';
+import type { CreateVolunteerProfileRequest } from '../../types/user';
 import ErrorBoundary from '../common/ErrorBoundary';
+import { formatDate } from '../../utils/dateUtils';
+import { api } from '../../lib/api';
+import campaignApi from '../../lib/campaignApi';
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
 
 interface IntegratedVolunteerDashboardProps {
   className?: string;
@@ -45,7 +50,7 @@ const IntegratedVolunteerDashboard: React.FC<IntegratedVolunteerDashboardProps> 
   const updateProfileMutation = useUpdateVolunteerProfile();
 
   // Extract data from backend response (backend returns { success: true, data: volunteer })
-  const profile: VolunteerProfile | undefined = profileData?.data;
+  const profile = profileData?.data;
   // Applications data structure: { success: true, data: { campaigns: [...], pagination: {...} } }
   const applications = Array.isArray(applicationsData?.data?.campaigns)
     ? applicationsData.data.campaigns
@@ -63,8 +68,12 @@ const IntegratedVolunteerDashboard: React.FC<IntegratedVolunteerDashboardProps> 
 
   const handleUpdateProfile = async (data: VolunteerProfileUpdateRequest, files?: File[]) => {
     try {
-      // Update existing profile
-      await updateProfileMutation.mutateAsync({ data, files });
+      // Update existing profile with files
+      const profileData = {
+        ...data,
+        files: files || [],
+      };
+      await updateProfileMutation.mutateAsync({ userId: user?.id || '', profileData });
       toast.success('Profile updated successfully!');
       setShowEditModal(false);
     } catch (error: any) {
@@ -73,10 +82,16 @@ const IntegratedVolunteerDashboard: React.FC<IntegratedVolunteerDashboardProps> 
     }
   };
 
-  const handleCreateProfile = async (data: VolunteerProfileUpdateRequest, files?: File[]) => {
+  const handleCreateProfile = async (data: CreateVolunteerProfileRequest, files?: File[]) => {
     try {
+      // Combine data and files for the mutation
+      const profileData = {
+        ...data,
+        files: files || [],
+      };
+      
       // Create new profile
-      await createProfileMutation.mutateAsync({ data, files });
+      await createProfileMutation.mutateAsync(profileData);
       toast.success('Volunteer profile created successfully!');
       setShowCreateModal(false);
       // The backend trigger will set is_volunteer = true, so we need to refresh the page or refetch user data
@@ -119,6 +134,68 @@ const IntegratedVolunteerDashboard: React.FC<IntegratedVolunteerDashboardProps> 
       window.location.reload();
     } catch (error) {
       toast.error('Failed to cancel application');
+    }
+  };
+
+  const handleDownloadCertificate = async (campaignId: string, userId: string) => {
+    try {
+      // Use the campaign API which handles base URL and authorization
+      const response = await campaignApi.downloadCertificate(campaignId, userId);
+
+      if (response.success && response.data?.download_url) {
+        const { download_url, filename, is_external_url } = response.data;
+
+        // For both external and local URLs, force download using fetch and blob
+        await downloadFileFromUrl(download_url, filename || `certificate_${campaignId}_${userId}.pdf`);
+
+        toast.success('Certificate downloaded successfully');
+      } else {
+        toast.error(response.error || 'Failed to download certificate');
+      }
+    } catch (error: any) {
+      // Handle API errors
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to download certificate';
+      toast.error(errorMessage);
+    }
+  };
+
+  // Helper function to download file from URL
+  const downloadFileFromUrl = async (url: string, filename: string) => {
+    try {
+      // Fetch the file
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          // Add authorization if it's an internal API call
+          ...(url.includes('/api/') && {
+            'Authorization': `Bearer ${localStorage.getItem('giv_access_token')}`
+          })
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Get the blob
+      const blob = await response.blob();
+
+      // Create download link
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = filename;
+
+      // Append to body, click, and remove
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Clean up the object URL
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error('Error downloading file:', error);
+      throw error;
     }
   };
 
@@ -558,16 +635,29 @@ const IntegratedVolunteerDashboard: React.FC<IntegratedVolunteerDashboardProps> 
                             {formatDate(application.application_date)}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-sm">
-                            {application.status === 'waiting' ? (
-                              <button
-                                onClick={() => handleCancelApplication(application.campaign_id)}
-                                className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
-                              >
-                                Cancel
-                              </button>
-                            ) : (
-                              <span className="text-gray-400 dark:text-gray-500">-</span>
-                            )}
+                            <div className="flex items-center space-x-2">
+                              {application.status === 'waiting' && (
+                                <button
+                                  onClick={() => handleCancelApplication(application.campaign_id)}
+                                  className="text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 font-medium transition-colors"
+                                >
+                                  Cancel
+                                </button>
+                              )}
+                              {application.status === 'completed' && application.certificate_url && (
+                                <button
+                                  onClick={() => handleDownloadCertificate(application.campaign_id, application.user_id)}
+                                  className="inline-flex items-center text-green-600 hover:text-green-800 dark:text-green-400 dark:hover:text-green-300 font-medium transition-colors"
+                                  title="Download Certificate"
+                                >
+                                  <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                                  Certificate
+                                </button>
+                              )}
+                              {application.status !== 'waiting' && !(application.status === 'completed' && application.certificate_url) && (
+                                <span className="text-gray-400 dark:text-gray-500">-</span>
+                              )}
+                            </div>
                           </td>
                         </motion.tr>
                       ))}

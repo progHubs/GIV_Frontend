@@ -57,6 +57,7 @@ export interface CampaignVolunteer extends BaseEntity {
   hours_completed?: number;
   start_date?: string;
   end_date?: string;
+  certificate_url?: string;
 
   // Relationships
   campaigns?: Campaign;
@@ -143,16 +144,25 @@ export interface VolunteerStats {
   }>;
 }
 
-// Volunteer Filters
+// Volunteer Filters  
 export interface VolunteerFilters {
-  status?: VolunteerStatus[];
-  role?: VolunteerRole[];
-  specialization?: string[];
-  skills?: string[];
-  availability?: string[];
-  background_check_status?: string[];
-  is_medical_professional?: boolean;
   search?: string;
+  location?: string;
+  volunteer_roles?: string;
+  background_check_status?: string;
+  training_completed?: boolean;
+  is_licensed_practitioner?: boolean;
+  medical_education_institution?: string;
+  referral_source?: string;
+  application_status?: string;
+  min_rating?: number;
+  max_rating?: number;
+  has_completed_campaigns?: boolean;
+  availability?: string;
+  created_after?: string;
+  created_before?: string;
+  updated_after?: string;
+  updated_before?: string;
   page?: number;
   limit?: number;
   sortBy?: string;

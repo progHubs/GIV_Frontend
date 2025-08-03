@@ -26,16 +26,29 @@ export function formatCurrency(amount: number | string, currency = 'USD'): strin
 
 /**
  * Formats a date string or Date object
+ * @deprecated Use formatDate from utils/dateUtils.ts instead for better error handling
  */
 export function formatDate(date: string | Date, options?: Intl.DateTimeFormatOptions): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  // Import the new utility
+  const { formatDate: formatDateUtil } = require('../utils/dateUtils');
 
-  return new Intl.DateTimeFormat('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-    ...options,
-  }).format(dateObj);
+  // If options are provided, use the old implementation for backward compatibility
+  if (options) {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      return new Intl.DateTimeFormat('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        ...options,
+      }).format(dateObj);
+    } catch (error) {
+      return 'Invalid date';
+    }
+  }
+
+  // Use the new utility for better error handling
+  return formatDateUtil(date);
 }
 
 /**

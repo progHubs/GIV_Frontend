@@ -60,7 +60,13 @@ const VolunteerSection: React.FC<VolunteerSectionProps> = ({ campaign, className
 
   const handleProfileCreation = async (data: VolunteerProfileUpdateRequest, files?: File[]) => {
     try {
-      await createProfileMutation.mutateAsync({ data, files });
+      // Combine data and files for the mutation
+      const profileData = {
+        ...data,
+        files: files || [],
+      };
+      
+      await createProfileMutation.mutateAsync(profileData);
       toast.success('Volunteer profile created successfully!');
       setShowProfileCreationForm(false);
       // After profile creation, show application form

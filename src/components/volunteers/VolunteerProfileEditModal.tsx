@@ -48,7 +48,7 @@ const VolunteerProfileEditModal: React.FC<VolunteerProfileEditModalProps> = ({
   const [files, setFiles] = useState<File[]>([]);
 
   // Parse existing volunteer roles
-  const existingRoles = profile.volunteer_roles
+  const existingRoles = profile?.volunteer_roles
     ? profile.volunteer_roles.split(',').map(role => role.trim())
     : [];
 
@@ -59,24 +59,41 @@ const VolunteerProfileEditModal: React.FC<VolunteerProfileEditModalProps> = ({
     watch,
   } = useForm<FormData>({
     defaultValues: {
-      location: profile.location || '',
+      location: profile?.location || '',
       volunteer_roles: existingRoles,
-      is_licensed_practitioner: profile.is_licensed_practitioner || false,
-      license_number: profile.license_number || '',
+      is_licensed_practitioner: profile?.is_licensed_practitioner || false,
+      license_number: profile?.license_number || '',
       license_expiry_date: (() => {
-        if (!profile.license_expiry_date) return '';
+        if (!profile?.license_expiry_date) return '';
         try {
-          const date = new Date(profile.license_expiry_date);
-          if (isNaN(date.getTime())) return '';
+          // Handle different date formats from backend
+          let date: Date;
+          if (typeof profile.license_expiry_date === 'string') {
+            // If it's already a date string, parse it
+            date = new Date(profile.license_expiry_date);
+          } else if (profile.license_expiry_date instanceof Date) {
+            // If it's already a Date object
+            date = profile.license_expiry_date;
+          } else {
+            // Handle other formats
+            date = new Date(profile.license_expiry_date);
+          }
+          
+          if (isNaN(date.getTime())) {
+            console.warn('Invalid license_expiry_date:', profile.license_expiry_date);
+            return '';
+          }
+          
+          // Format as YYYY-MM-DD for input type="date"
           return date.toISOString().split('T')[0];
         } catch (error) {
-          console.warn('Invalid license_expiry_date:', profile.license_expiry_date);
+          console.warn('Error parsing license_expiry_date:', profile.license_expiry_date, error);
           return '';
         }
       })(),
-      medical_education_institution: profile.medical_education_institution || '',
-      medical_education_year: profile.medical_education_year || undefined,
-      medical_education_degree: profile.medical_education_degree || '',
+      medical_education_institution: profile?.medical_education_institution || '',
+      medical_education_year: profile?.medical_education_year || undefined,
+      medical_education_degree: profile?.medical_education_degree || '',
     },
   });
 

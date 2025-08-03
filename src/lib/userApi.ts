@@ -338,15 +338,75 @@ export const userApi = {
    * POST /volunteers
    */
   createVolunteerProfile: async (
-    profileData: CreateVolunteerProfileRequest
+    profileData: CreateVolunteerProfileRequest & { files?: File[] }
   ): Promise<VolunteerResponse> => {
-    // Convert availability object to JSON string if provided
-    const requestData = {
-      ...profileData,
-      availability: profileData.availability ? JSON.stringify(profileData.availability) : undefined,
-    };
+    // Create FormData for file uploads
+    const formData = new FormData();
 
-    return api.post<VolunteerResponse>(USER_ENDPOINTS.volunteers, requestData);
+    // Add all text fields to FormData
+    Object.entries(profileData).forEach(([key, value]) => {
+      if (key !== 'files' && value !== undefined && value !== null) {
+        if (key === 'availability' && typeof value === 'object') {
+          formData.append(key, JSON.stringify(value));
+        } else if (key === 'volunteer_roles' && Array.isArray(value)) {
+          // Don't JSON stringify volunteer_roles - send as comma-separated string
+          formData.append(key, value.join(','));
+        } else if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else {
+          formData.append(key, String(value));
+        }
+      }
+    });
+
+    // Add files if provided
+    if (profileData.files && profileData.files.length > 0) {
+      profileData.files.forEach((file, index) => {
+        formData.append('volunteer_documents', file);
+      });
+    }
+
+    // Debug logging
+    console.log('Creating volunteer profile with FormData:');
+    console.log('Profile data:', profileData);
+    console.log('Files count:', profileData.files?.length || 0);
+    
+    // Log FormData contents (for debugging)
+    for (let [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        console.log(`FormData entry: ${key} = File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`FormData entry: ${key} = ${value}`);
+      }
+    }
+
+    // Log the request details
+    console.log('Sending request to:', USER_ENDPOINTS.volunteers);
+    console.log('FormData has entries:', Array.from(formData.entries()).length);
+    console.log('FormData size estimate:', Array.from(formData.entries()).reduce((size, [key, value]) => {
+      if (value instanceof File) {
+        return size + value.size;
+      }
+      return size + String(value).length;
+    }, 0), 'bytes');
+
+    // Test FormData creation
+    console.log('=== FormData Test ===');
+    const testFormData = new FormData();
+    testFormData.append('test_field', 'test_value');
+    if (profileData.files && profileData.files.length > 0) {
+      testFormData.append('test_file', profileData.files[0]);
+    }
+    console.log('Test FormData entries:');
+    for (let [key, value] of testFormData.entries()) {
+      if (value instanceof File) {
+        console.log(`  Test: ${key} = File(${value.name}, ${value.size} bytes, ${value.type})`);
+      } else {
+        console.log(`  Test: ${key} = ${value}`);
+      }
+    }
+
+    return api.post<VolunteerResponse>(USER_ENDPOINTS.volunteers, formData);
   },
 
   /**
@@ -362,14 +422,50 @@ export const userApi = {
    * PUT /volunteers/me
    */
   updateCurrentVolunteerProfile: async (
-    profileData: UpdateVolunteerProfileRequest
+    profileData: UpdateVolunteerProfileRequest & { files?: File[] }
   ): Promise<VolunteerResponse> => {
-    const requestData = {
-      ...profileData,
-      availability: profileData.availability ? JSON.stringify(profileData.availability) : undefined,
-    };
+    // Check if files are provided
+    if (profileData.files && profileData.files.length > 0) {
+      // Use FormData for file uploads
+      const formData = new FormData();
 
-    return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/me`, requestData);
+      // Add all text fields to FormData
+      Object.entries(profileData).forEach(([key, value]) => {
+        if (key !== 'files' && value !== undefined && value !== null) {
+          if (key === 'availability' && typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else if (key === 'volunteer_roles' && Array.isArray(value)) {
+            // Don't JSON stringify volunteer_roles - send as comma-separated string
+            formData.append(key, value.join(','));
+          } else if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      // Add files if provided
+      if (profileData.files && profileData.files.length > 0) {
+        profileData.files.forEach((file, index) => {
+          formData.append('volunteer_documents', file);
+        });
+      }
+
+      return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/me`, formData);
+    } else {
+      // Use JSON for text-only updates
+      const requestData = {
+        ...profileData,
+        availability: profileData.availability ? JSON.stringify(profileData.availability) : undefined,
+        // Handle volunteer_roles consistently
+        volunteer_roles: (profileData as any).volunteer_roles && Array.isArray((profileData as any).volunteer_roles) 
+          ? (profileData as any).volunteer_roles.join(',') 
+          : (profileData as any).volunteer_roles,
+      };
+
+      return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/me`, requestData);
+    }
   },
 
   /**
@@ -378,14 +474,50 @@ export const userApi = {
    */
   updateVolunteerProfile: async (
     userId: string,
-    profileData: UpdateVolunteerProfileRequest
+    profileData: UpdateVolunteerProfileRequest & { files?: File[] }
   ): Promise<VolunteerResponse> => {
-    const requestData = {
-      ...profileData,
-      availability: profileData.availability ? JSON.stringify(profileData.availability) : undefined,
-    };
+    // Check if files are provided
+    if (profileData.files && profileData.files.length > 0) {
+      // Use FormData for file uploads
+      const formData = new FormData();
 
-    return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/${userId}`, requestData);
+      // Add all text fields to FormData
+      Object.entries(profileData).forEach(([key, value]) => {
+        if (key !== 'files' && value !== undefined && value !== null) {
+          if (key === 'availability' && typeof value === 'object') {
+            formData.append(key, JSON.stringify(value));
+          } else if (key === 'volunteer_roles' && Array.isArray(value)) {
+            // Don't JSON stringify volunteer_roles - send as comma-separated string
+            formData.append(key, value.join(','));
+          } else if (Array.isArray(value)) {
+            formData.append(key, JSON.stringify(value));
+          } else {
+            formData.append(key, String(value));
+          }
+        }
+      });
+
+      // Add files if provided
+      if (profileData.files && profileData.files.length > 0) {
+        profileData.files.forEach((file, index) => {
+          formData.append('volunteer_documents', file);
+        });
+      }
+
+      return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/${userId}`, formData);
+    } else {
+      // Use JSON for text-only updates
+      const requestData = {
+        ...profileData,
+        availability: profileData.availability ? JSON.stringify(profileData.availability) : undefined,
+        // Handle volunteer_roles consistently
+        volunteer_roles: (profileData as any).volunteer_roles && Array.isArray((profileData as any).volunteer_roles) 
+          ? (profileData as any).volunteer_roles.join(',') 
+          : (profileData as any).volunteer_roles,
+      };
+
+      return api.put<VolunteerResponse>(`${USER_ENDPOINTS.volunteers}/${userId}`, requestData);
+    }
   },
 
   /**

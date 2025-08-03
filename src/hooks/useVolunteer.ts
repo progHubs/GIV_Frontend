@@ -3,13 +3,16 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { campaignApi } from '../lib/campaignApi';
+import { userApi } from '../lib/userApi';
 import { api } from '../lib/api';
+import { toast } from 'react-hot-toast';
 import type {
   VolunteerApplicationRequest,
   VolunteerProfileUpdateRequest,
   VolunteerHoursRequest,
   VolunteerFilters,
   CampaignVolunteerFilters,
+  VolunteerProfile,
 } from '../types/volunteer';
 
 // Query Keys for React Query
@@ -21,6 +24,92 @@ export const volunteerQueryKeys = {
     [...volunteerQueryKeys.all, 'campaign', campaignId, filters] as const,
   stats: (userId?: string) => [...volunteerQueryKeys.all, 'stats', userId] as const,
   userCampaigns: () => [...volunteerQueryKeys.all, 'userCampaigns'] as const,
+  volunteers: (filters: VolunteerFilters) => [...volunteerQueryKeys.all, 'volunteers', filters] as const,
+  search: (query: string, filters: VolunteerFilters) => [...volunteerQueryKeys.all, 'search', query, filters] as const,
+};
+
+// ==================== VOLUNTEER PROFILE HOOKS ====================
+
+/**
+ * Hook to fetch all volunteers (admin only)
+ */
+export const useAllVolunteers = (filters: VolunteerFilters = {}, options?: any) => {
+  return useQuery({
+    queryKey: volunteerQueryKeys.volunteers(filters),
+    queryFn: () => userApi.getVolunteers(filters),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    keepPreviousData: true,
+    ...options,
+  });
+};
+
+/**
+ * Hook to search volunteers (admin only)
+ */
+export const useSearchVolunteers = (searchParams: { query: string } & VolunteerFilters, options?: any) => {
+  return useQuery({
+    queryKey: volunteerQueryKeys.search(searchParams.query, searchParams),
+    queryFn: () => userApi.searchVolunteers(searchParams.query, searchParams),
+    staleTime: 30 * 1000, // 30 seconds
+    ...options,
+  });
+};
+
+/**
+ * Hook to get volunteer statistics (admin only)
+ */
+export const useVolunteerStats = () => {
+  return useQuery({
+    queryKey: volunteerQueryKeys.stats(),
+    queryFn: () => userApi.getVolunteerStats(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
+ * Hook to update volunteer profile (admin or owner)
+ */
+export const useUpdateVolunteerProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, profileData }: { userId: string; profileData: Partial<VolunteerProfile> & { files?: File[] } }) => {
+      return userApi.updateVolunteerProfile(userId, profileData);
+    },
+    onSuccess: (_, variables) => {
+      // Invalidate volunteer queries
+      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.all });
+      // Invalidate specific volunteer profile
+      queryClient.invalidateQueries({ 
+        queryKey: volunteerQueryKeys.profile(variables.userId) 
+      });
+      toast.success('Volunteer profile updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update volunteer profile');
+    },
+  });
+};
+
+/**
+ * Hook to delete volunteer profile (admin only)
+ */
+export const useDeleteVolunteer = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (userId: string) => {
+      return userApi.deleteVolunteerProfile(userId);
+    },
+    onSuccess: () => {
+      // Invalidate all volunteer queries
+      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.all });
+      toast.success('Volunteer profile deleted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete volunteer profile');
+    },
+  });
 };
 
 // ==================== VOLUNTEER APPLICATION HOOKS ====================
@@ -65,6 +154,10 @@ export const useApplyCampaignVolunteer = () => {
       queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.userCampaigns() });
       // Invalidate volunteer stats
       queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.stats() });
+      toast.success('Application submitted successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to submit application');
     },
   });
 };
@@ -74,7 +167,8 @@ export const useApplyCampaignVolunteer = () => {
  */
 export const useCampaignVolunteers = (
   campaignId: string,
-  filters: CampaignVolunteerFilters = {}
+  filters: CampaignVolunteerFilters = {},
+  options?: any
 ) => {
   return useQuery({
     queryKey: volunteerQueryKeys.campaignVolunteers(campaignId, filters),
@@ -83,6 +177,7 @@ export const useCampaignVolunteers = (
     enabled: !!campaignId,
     staleTime: 2 * 60 * 1000, // 2 minutes
     keepPreviousData: true, // For smooth pagination
+    ...options,
   });
 };
 
@@ -103,7 +198,9 @@ export const useUpdateVolunteerStatus = () => {
       userId: string;
       status: string;
       notes?: string;
-    }) => campaignApi.updateVolunteerStatus(campaignId, userId, { status, notes }),
+    }) => {
+      return campaignApi.updateVolunteerStatus(campaignId, userId, { status, notes });
+    },
     onSuccess: (_, variables) => {
       // Invalidate campaign volunteers
       queryClient.invalidateQueries({
@@ -111,11 +208,13 @@ export const useUpdateVolunteerStatus = () => {
       });
       // Invalidate volunteer stats
       queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.stats() });
+      toast.success('Volunteer status updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update volunteer status');
     },
   });
 };
-
-// ==================== VOLUNTEER HOURS HOOKS ====================
 
 /**
  * Hook for logging volunteer hours
@@ -124,45 +223,106 @@ export const useLogVolunteerHours = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
-      campaignVolunteerId,
-      hoursData,
-    }: {
-      campaignVolunteerId: string;
-      hoursData: VolunteerHoursRequest;
-    }) => campaignApi.logVolunteerHours(campaignVolunteerId, hoursData),
+    mutationFn: (data: VolunteerHoursRequest) => {
+      return campaignApi.logVolunteerHours(data.campaign_volunteer_id, data);
+    },
     onSuccess: () => {
-      // Invalidate user's volunteer campaigns
-      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.userCampaigns() });
-      // Invalidate volunteer stats
+      // Invalidate relevant queries
+      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.campaigns() });
       queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.stats() });
+      toast.success('Hours logged successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to log hours');
     },
   });
 };
 
-// ==================== VOLUNTEER STATISTICS HOOKS ====================
-
 /**
- * Hook for fetching volunteer statistics
+ * Hook for getting user's volunteer campaigns
  */
-export const useVolunteerStats = (userId?: string) => {
+export const useUserVolunteerCampaigns = (filters: any = {}) => {
   return useQuery({
-    queryKey: volunteerQueryKeys.stats(userId),
-    queryFn: () => campaignApi.getVolunteerStats(userId),
-    select: data => (data.success ? data.data : null),
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    queryKey: volunteerQueryKeys.userCampaigns(),
+    queryFn: () => campaignApi.getUserVolunteerCampaigns(),
+    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 
 /**
- * Hook for fetching user's volunteer campaigns
+ * Hook for getting campaign applications for a specific volunteer (Admin only)
  */
-export const useUserVolunteerCampaigns = () => {
+export const useVolunteerCampaignApplications = (
+  userId: string,
+  filters: any = {},
+  options?: any
+) => {
   return useQuery({
-    queryKey: volunteerQueryKeys.userCampaigns(),
-    queryFn: () => campaignApi.getUserVolunteerCampaigns(),
-    select: data => (data.success ? data.data : []),
+    queryKey: ['volunteer', 'campaignApplications', userId, filters],
+    queryFn: () => campaignApi.getVolunteerCampaignApplications(userId, filters),
+    select: data => (data.success ? data : { success: true, data: [], pagination: {} }),
+    enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
+    ...options,
+  });
+};
+
+/**
+ * Hook for getting volunteer profile by ID
+ */
+export const useVolunteerProfile = (userId?: string) => {
+  return useQuery({
+    queryKey: volunteerQueryKeys.profile(userId),
+    queryFn: () => {
+      if (!userId) return userApi.getCurrentVolunteerProfile();
+      return userApi.getVolunteerById(userId);
+    },
+    enabled: !!userId || userId === undefined, // Enable for current user or specific user
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+// ==================== VOLUNTEER PROFILE MANAGEMENT HOOKS ====================
+
+/**
+ * Hook for creating volunteer profile
+ */
+export const useCreateVolunteerProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (profileData: any) => {
+      return userApi.createVolunteerProfile(profileData);
+    },
+    onSuccess: () => {
+      // Invalidate volunteer queries
+      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.all });
+      toast.success('Volunteer profile created successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create volunteer profile');
+    },
+  });
+};
+
+/**
+ * Hook for updating current user's volunteer profile
+ */
+export const useUpdateCurrentVolunteerProfile = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (profileData: VolunteerProfileUpdateRequest & { files?: File[] }) => {
+      return userApi.updateCurrentVolunteerProfile(profileData);
+    },
+    onSuccess: () => {
+      // Invalidate current volunteer profile
+      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.profile() });
+      toast.success('Profile updated successfully');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update profile');
+    },
   });
 };
 
@@ -261,158 +421,6 @@ export const usePendingVolunteerApplications = () => {
       return Promise.resolve({ success: true, data: [] });
     },
     select: data => (data.success ? data.data : []),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-  });
-};
-
-// ==================== VOLUNTEER PROFILE HOOKS ====================
-
-/**
- * Hook for getting volunteer profile
- */
-export const useVolunteerProfile = (userId?: string, enabled: boolean = true) => {
-  return useQuery({
-    queryKey: volunteerQueryKeys.profile(userId),
-    queryFn: () => api.get(userId ? `/volunteers/${userId}` : '/volunteers/me'),
-    select: data => (data.success ? data : { success: true, data: null }),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    enabled,
-  });
-};
-
-/**
- * Hook for creating volunteer profile
- */
-export const useCreateVolunteerProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ data, files }: { data: VolunteerProfileUpdateRequest; files?: File[] }) => {
-      // Create FormData if files are provided
-      if (files && files.length > 0) {
-        const formData = new FormData();
-
-        // Add form data
-        Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            if (key === 'volunteer_roles' && Array.isArray(value)) {
-              // Join volunteer roles as comma-separated string for backend
-              formData.append(key, value.join(','));
-            } else if (Array.isArray(value)) {
-              value.forEach(item => formData.append(`${key}[]`, item.toString()));
-            } else {
-              formData.append(key, value.toString());
-            }
-          }
-        });
-
-        // Add files
-        files.forEach(file => {
-          formData.append('volunteer_documents', file);
-        });
-
-        return api.post('/volunteers', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } else {
-        // Process volunteer_roles for non-file uploads
-        const processedData = {
-          ...data,
-          volunteer_roles: Array.isArray(data.volunteer_roles)
-            ? data.volunteer_roles.join(',')
-            : data.volunteer_roles,
-        };
-        return api.post('/volunteers', processedData);
-      }
-    },
-    onSuccess: () => {
-      // Invalidate volunteer profile
-      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.profile() });
-      // Invalidate volunteer stats
-      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.stats() });
-    },
-  });
-};
-
-/**
- * Hook for updating volunteer profile
- */
-export const useUpdateVolunteerProfile = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ data, files }: { data: VolunteerProfileUpdateRequest; files?: File[] }) => {
-      // Create FormData if files are provided
-      if (files && files.length > 0) {
-        const formData = new FormData();
-
-        // Add form data
-        Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            if (key === 'volunteer_roles' && Array.isArray(value)) {
-              // Join volunteer roles as comma-separated string for backend
-              formData.append(key, value.join(','));
-            } else if (Array.isArray(value)) {
-              value.forEach(item => formData.append(`${key}[]`, item.toString()));
-            } else {
-              formData.append(key, value.toString());
-            }
-          }
-        });
-
-        // Add files
-        files.forEach(file => {
-          formData.append('volunteer_documents', file);
-        });
-
-        return api.put('/volunteers/me', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-      } else {
-        // Process volunteer_roles for non-file uploads
-        const processedData = {
-          ...data,
-          volunteer_roles: Array.isArray(data.volunteer_roles)
-            ? data.volunteer_roles.join(',')
-            : data.volunteer_roles,
-        };
-        return api.put('/volunteers/me', processedData);
-      }
-    },
-    onSuccess: () => {
-      // Invalidate volunteer profile
-      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.profile() });
-      // Invalidate volunteer stats
-      queryClient.invalidateQueries({ queryKey: volunteerQueryKeys.stats() });
-    },
-  });
-};
-
-/**
- * Hook for getting all volunteers (admin)
- */
-export const useAllVolunteers = (filters: VolunteerFilters = {}) => {
-  return useQuery({
-    queryKey: [...volunteerQueryKeys.all, 'list', filters],
-    queryFn: () => {
-      const params = new URLSearchParams();
-
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          if (Array.isArray(value)) {
-            value.forEach(item => params.append(key, item.toString()));
-          } else {
-            params.append(key, value.toString());
-          }
-        }
-      });
-
-      const queryString = params.toString();
-      const url = queryString ? `/volunteers?${queryString}` : '/volunteers';
-
-      return api.get(url);
-    },
-    select: data => (data.success ? data : { success: true, data: [], pagination: {} }),
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
