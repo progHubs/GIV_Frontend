@@ -4,9 +4,11 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import type { Post } from '../../types/content';
+import { renderContentBlocksToText } from '../../utils/contentRenderer';
 
 interface FeaturedPostCardProps {
   post: Post;
@@ -47,7 +49,27 @@ const FeaturedPostCard: React.FC<FeaturedPostCardProps> = ({ post }) => {
     }
   };
 
-  const truncateContent = (content: string, maxLength: number = 180) => {
+  const getPostExcerpt = (post: Post, maxLength: number = 180) => {
+    let content = '';
+
+    // Try to get content from content_blocks first
+    if (post.content_blocks) {
+      try {
+        const contentBlocks = typeof post.content_blocks === 'string'
+          ? JSON.parse(post.content_blocks)
+          : post.content_blocks;
+        content = renderContentBlocksToText(contentBlocks);
+      } catch (error) {
+        console.error('Error extracting text from content blocks:', error);
+      }
+    }
+
+    // Fallback to legacy content
+    if (!content && post.content) {
+      content = post.content;
+    }
+
+    // Truncate content
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength).trim() + '...';
   };
@@ -93,9 +115,9 @@ const FeaturedPostCard: React.FC<FeaturedPostCardProps> = ({ post }) => {
         {/* Bottom Content Overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-6 text-white">
           <h2 className="text-xl font-bold mb-2 line-clamp-2">
-            <a href={`/posts/${post.slug}`} className="hover:text-blue-300 transition-colors duration-200">
+            <Link to={`/posts/${post.slug}`} className="hover:text-blue-300 transition-colors duration-200">
               {post.title}
-            </a>
+            </Link>
           </h2>
         </div>
       </div>
@@ -104,7 +126,7 @@ const FeaturedPostCard: React.FC<FeaturedPostCardProps> = ({ post }) => {
       <div className="p-6">
         {/* Excerpt */}
         <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed">
-          {truncateContent(post.content || '')}
+          {getPostExcerpt(post)}
         </p>
 
         {/* Tags */}

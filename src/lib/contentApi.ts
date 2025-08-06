@@ -256,7 +256,7 @@ export const getPostsByType = async (
   params?: Omit<PostQueryParams, 'post_type'>
 ): Promise<PostListApiResponse> => {
   const queryParams = new URLSearchParams();
-  
+
   if (params) {
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -270,6 +270,30 @@ export const getPostsByType = async (
   }
 
   const url = `/posts/type/${type}${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return api.get<PostListApiResponse>(url);
+};
+
+/**
+ * Get recent posts
+ */
+export const getRecentPosts = async (
+  params?: PostQueryParams
+): Promise<PostListApiResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        if (Array.isArray(value)) {
+          queryParams.append(key, value.join(','));
+        } else {
+          queryParams.append(key, String(value));
+        }
+      }
+    });
+  }
+
+  const url = `/posts/recent${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   return api.get<PostListApiResponse>(url);
 };
 
@@ -334,6 +358,28 @@ export const getCommentsByPost = async (
   }
 
   const url = `/comments/${postId}/comments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return api.get<CommentListApiResponse>(url);
+};
+
+/**
+ * Get replies for a specific comment
+ */
+export const getCommentReplies = async (
+  postId: string,
+  parentId: string,
+  params?: CommentQueryParams
+): Promise<CommentListApiResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+  }
+
+  const url = `/comments/${postId}/comments/${parentId}/replies${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
   return api.get<CommentListApiResponse>(url);
 };
 

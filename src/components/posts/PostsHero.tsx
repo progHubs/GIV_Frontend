@@ -1,111 +1,205 @@
 /**
- * Posts Hero Component
- * Hero section for the posts page with search functionality
+ * Featured Posts Hero Component
+ * Hero section displaying featured posts in a carousel/slider format
  */
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { formatDistanceToNow } from 'date-fns';
+import type { Post } from '../../types/content';
+import { renderContentBlocksToText } from '../../utils/contentRenderer';
 
-interface PostsHeroProps {
-  onSearch: (query: string) => void;
+interface FeaturedPostsHeroProps {
+  featuredPosts: Post[];
+  isLoading?: boolean;
 }
 
-const PostsHero: React.FC<PostsHeroProps> = ({ onSearch }) => {
-  const [searchQuery, setSearchQuery] = useState('');
+const FeaturedPostsHero: React.FC<FeaturedPostsHeroProps> = ({
+  featuredPosts,
+  isLoading = false
+}) => {
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSearch(searchQuery);
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isAutoPlaying || featuredPosts.length <= 1) return;
+
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % featuredPosts.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [featuredPosts.length, isAutoPlaying]);
+
+  const formatDate = (dateString: string) => {
+    try {
+      return formatDistanceToNow(new Date(dateString), { addSuffix: true });
+    } catch {
+      return 'Recently';
+    }
   };
 
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    onSearch(query);
+  const getPostExcerpt = (post: Post, maxLength: number = 200) => {
+    let content = '';
+
+    // Try to get content from content_blocks first
+    if (post.content_blocks) {
+      try {
+        const contentBlocks = typeof post.content_blocks === 'string'
+          ? JSON.parse(post.content_blocks)
+          : post.content_blocks;
+        content = renderContentBlocksToText(contentBlocks);
+      } catch (error) {
+        console.error('Error extracting text from content blocks:', error);
+      }
+    }
+
+    // Fallback to legacy content
+    if (!content && post.content) {
+      content = post.content;
+    }
+
+    // Truncate content
+    if (content.length <= maxLength) return content;
+    return content.substring(0, maxLength).trim() + '...';
   };
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % featuredPosts.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + featuredPosts.length) % featuredPosts.length);
+  };
+
+  const goToSlide = (index: number) => {
+    setCurrentSlide(index);
+  };
+
+  if (isLoading) {
+    return (
+      <section className="relative h-96 bg-gradient-to-r from-gray-100 to-gray-200 animate-pulse">
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="text-gray-400">Loading featured posts...</div>
+        </div>
+      </section>
+    );
+  }
+
+  if (!featuredPosts || featuredPosts.length === 0) {
+    return null;
+  }
+
+  const currentPost = featuredPosts[currentSlide];
 
   return (
-    <section className="relative bg-gradient-to-br from-blue-600 via-blue-700 to-green-600 pt-20 pb-16 overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-        }}></div>
-      </div>
+    <section
+      className="relative h-[450px] md:h-[600px] overflow-hidden"
+      onMouseEnter={() => setIsAutoPlaying(false)}
+      onMouseLeave={() => setIsAutoPlaying(true)}
+    >
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={currentSlide}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.5 }}
+          className="absolute inset-0"
+        >
+          {/* Background Image */}
+          <div className="absolute inset-0">
+            <img
+              src={currentPost.feature_image || 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=600&fit=crop'}
+              alt={currentPost.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/50"></div>
+          </div>
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center">
-          {/* Main Heading */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="mb-8"
-          >
-            <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4">
-              News & Stories
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto leading-relaxed">
-              Stay informed about our latest initiatives, success stories, and the impact 
-              we're making together in Ethiopian communities.
-            </p>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12"
-          >
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">50+</div>
-              <div className="text-blue-100">Stories Published</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">15K+</div>
-              <div className="text-blue-100">Readers Reached</div>
-            </div>
-            <div className="text-center">
-              <div className="text-3xl md:text-4xl font-bold text-white mb-2">8</div>
-              <div className="text-blue-100">Categories</div>
-            </div>
-          </motion.div>
-
-          {/* Search Bar */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="max-w-2xl mx-auto"
-          >
-            <form onSubmit={handleSearchSubmit} className="relative">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Search articles, news, and stories..."
-                  className="w-full px-6 py-4 pl-14 pr-16 text-lg bg-white/95 backdrop-blur-sm border border-white/20 rounded-2xl focus:outline-none focus:ring-4 focus:ring-white/30 focus:border-white/40 transition-all duration-300 shadow-xl"
-                />
-                <div className="absolute left-5 top-1/2 transform -translate-y-1/2">
-                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                </div>
-                <button
-                  type="submit"
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition-colors duration-200 font-medium"
+          {/* Content - Positioned at bottom left */}
+          <div className="relative h-full flex items-end">
+            <div className="max-w-8xl mx-auto px-6 sm:px-8 lg:px-12 w-full">
+              <div className="max-w-4xl mb-8">
+                <motion.div
+                  initial={{ y: 30, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  transition={{ duration: 0.6, delay: 0.2 }}
+                  className="space-y-4"
                 >
-                  Search
-                </button>
+                  {/* Title */}
+                  <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
+                    <Link
+                      to={`/posts/${currentPost.slug}`}
+                      className="hover:text-blue-200 transition-colors duration-200"
+                    >
+                      {currentPost.title}
+                    </Link>
+                  </h1>
+
+                  {/* Excerpt */}
+                  <p className="text-sm md:text-base lg:text-lg text-gray-200 leading-relaxed max-w-2xl">
+                    {getPostExcerpt(currentPost, 120)}
+                  </p>
+
+                  {/* Read More Button */}
+                  <div className="pt-2">
+                    <Link
+                      to={`/posts/${currentPost.slug}`}
+                      className="inline-flex items-center px-4 py-2 bg-white text-gray-900 font-medium rounded-lg hover:bg-gray-100 transition-colors duration-200 text-sm"
+                    >
+                      Read Full Story
+                      <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </Link>
+                  </div>
+                </motion.div>
               </div>
-            </form>
-          </motion.div>
-        </div>
-      </div>
+            </div>
+          </div>
+        </motion.div>
+      </AnimatePresence>
+
+      {/* Navigation Controls */}
+      {featuredPosts.length > 1 && (
+        <>
+          {/* Previous/Next Buttons */}
+          <button
+            onClick={prevSlide}
+            className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors duration-200"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <button
+            onClick={nextSlide}
+            className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-white/20 hover:bg-white/30 text-white p-2 rounded-full transition-colors duration-200"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+
+          {/* Dots Indicator */}
+          <div className="absolute bottom-6 left-1/2 transform -translate-x-1/2 flex space-x-2">
+            {featuredPosts.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => goToSlide(index)}
+                className={`w-3 h-3 rounded-full transition-colors duration-200 ${
+                  index === currentSlide ? 'bg-white' : 'bg-white/50 hover:bg-white/70'
+                }`}
+              />
+            ))}
+          </div>
+        </>
+      )}
     </section>
   );
 };
 
-export default PostsHero;
+export default FeaturedPostsHero;

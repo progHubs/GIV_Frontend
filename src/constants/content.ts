@@ -35,15 +35,10 @@ export const CONTENT_BLOCK_TYPES: Record<string, ContentBlockType> = {
   PARAGRAPH: 'paragraph',
   LIST: 'list',
   IMAGE: 'image',
-  VIDEO: 'video',
   QUOTE: 'quote',
   TABLE: 'table',
-  CODE: 'code',
   DELIMITER: 'delimiter',
-  WARNING: 'warning',
   EMBED: 'embed',
-  CHECKLIST: 'checklist',
-  ATTACHES: 'attaches',
 } as const;
 
 export const CONTENT_BLOCK_CONFIG = {
@@ -71,12 +66,6 @@ export const CONTENT_BLOCK_CONFIG = {
     icon: '🖼️',
     category: 'media',
   },
-  [CONTENT_BLOCK_TYPES.VIDEO]: {
-    name: 'Video',
-    description: 'Add videos with captions',
-    icon: '🎥',
-    category: 'media',
-  },
   [CONTENT_BLOCK_TYPES.QUOTE]: {
     name: 'Quote',
     description: 'Add blockquotes',
@@ -89,40 +78,16 @@ export const CONTENT_BLOCK_CONFIG = {
     icon: '📊',
     category: 'data',
   },
-  [CONTENT_BLOCK_TYPES.CODE]: {
-    name: 'Code',
-    description: 'Add code blocks with syntax highlighting',
-    icon: '💻',
-    category: 'code',
-  },
   [CONTENT_BLOCK_TYPES.DELIMITER]: {
     name: 'Delimiter',
     description: 'Add visual separators',
     icon: '➖',
     category: 'layout',
   },
-  [CONTENT_BLOCK_TYPES.WARNING]: {
-    name: 'Warning',
-    description: 'Add warning/alert boxes',
-    icon: '⚠️',
-    category: 'special',
-  },
   [CONTENT_BLOCK_TYPES.EMBED]: {
     name: 'Embed',
     description: 'Embed external content',
     icon: '🔗',
-    category: 'media',
-  },
-  [CONTENT_BLOCK_TYPES.CHECKLIST]: {
-    name: 'Checklist',
-    description: 'Add interactive checklists',
-    icon: '✅',
-    category: 'interactive',
-  },
-  [CONTENT_BLOCK_TYPES.ATTACHES]: {
-    name: 'Attachment',
-    description: 'Add file attachments',
-    icon: '📎',
     category: 'media',
   },
 };
@@ -265,15 +230,10 @@ export const EDITOR_CONFIG = {
     CONTENT_BLOCK_TYPES.PARAGRAPH,
     CONTENT_BLOCK_TYPES.LIST,
     CONTENT_BLOCK_TYPES.IMAGE,
-    CONTENT_BLOCK_TYPES.VIDEO,
     CONTENT_BLOCK_TYPES.QUOTE,
     CONTENT_BLOCK_TYPES.TABLE,
-    CONTENT_BLOCK_TYPES.CODE,
     CONTENT_BLOCK_TYPES.DELIMITER,
-    CONTENT_BLOCK_TYPES.WARNING,
     CONTENT_BLOCK_TYPES.EMBED,
-    CONTENT_BLOCK_TYPES.CHECKLIST,
-    CONTENT_BLOCK_TYPES.ATTACHES,
   ],
 };
 

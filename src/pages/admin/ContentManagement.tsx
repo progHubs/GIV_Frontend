@@ -21,7 +21,7 @@ import ContentListTable from '../../components/admin/ContentListTable';
 import ContentForm from '../../components/admin/ContentForm';
 import { usePosts } from '../../hooks/useContent';
 import type { Post, PostQueryParams } from '../../types/content';
-import { renderContentBlocksToHtml } from '../../utils/contentRenderer';
+import EditorJSRenderer from '../../components/content/EditorJSRenderer';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'preview';
 
@@ -315,14 +315,8 @@ const ContentManagement: React.FC = () => {
                     </div>
                     {(selectedPost.content_blocks || selectedPost.content) && (() => {
                       try {
-                        console.log('=== PREVIEW CONTENT RENDERING DEBUG ===');
-                        console.log('Raw content_blocks:', selectedPost.content_blocks);
-                        console.log('Content_blocks type:', typeof selectedPost.content_blocks);
-                        console.log('Legacy content field:', selectedPost.content);
 
                         let contentBlocks;
-                        let renderedHtml;
-
                         // Check if we have EditorJS content blocks
                         if (selectedPost.content_blocks) {
                           // Parse EditorJS content blocks
@@ -330,25 +324,24 @@ const ContentManagement: React.FC = () => {
                             ? JSON.parse(selectedPost.content_blocks)
                             : selectedPost.content_blocks;
 
-                          console.log('Parsed content blocks:', contentBlocks);
-                          console.log('Blocks array:', contentBlocks.blocks);
-
-                          // Render blocks to HTML
-                          renderedHtml = renderContentBlocksToHtml(contentBlocks);
+                          // Use the new EditorJS renderer
+                          return (
+                            <EditorJSRenderer
+                              data={contentBlocks}
+                              useTailwindProse={true}
+                              darkMode={false}
+                              className="content-blocks-preview"
+                            />
+                          );
                         } else if (selectedPost.content) {
                           // Fallback to legacy content (plain text/HTML)
-                          console.log('Using legacy content field');
-                          renderedHtml = selectedPost.content;
+                          return (
+                            <div
+                              className="prose prose-base max-w-none content-blocks-preview"
+                              dangerouslySetInnerHTML={{ __html: selectedPost.content }}
+                            />
+                          );
                         } else {
-                          console.log('No content found');
-                          renderedHtml = '';
-                        }
-
-                        console.log('Rendered HTML:', renderedHtml);
-                        console.log('HTML length:', renderedHtml.length);
-                        console.log('==========================================');
-
-                        if (!renderedHtml || renderedHtml.trim().length === 0) {
                           return (
                             <div className="text-yellow-600 bg-yellow-50 p-4 rounded-lg">
                               <p className="font-medium">No content to display</p>
@@ -356,16 +349,8 @@ const ContentManagement: React.FC = () => {
                             </div>
                           );
                         }
-
-                        return (
-                          <div
-                            className="content-blocks-preview"
-                            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-                          />
-                        );
                       } catch (error) {
                         console.error('Error rendering content blocks:', error);
-                        console.error('Content_blocks that failed:', selectedPost.content_blocks);
                         return (
                           <div className="text-red-600 bg-red-50 p-4 rounded-lg">
                             <p className="font-medium">Error rendering content</p>

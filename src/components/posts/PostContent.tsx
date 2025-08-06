@@ -7,14 +7,25 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow, format } from 'date-fns';
 import type { Post } from '../../types/content';
+import EditorJSRenderer from '../content/EditorJSRenderer';
+import { useTogglePostLike } from '../../hooks/useContent';
 
 interface PostContentProps {
   post: Post;
 }
 
 const PostContent: React.FC<PostContentProps> = ({ post }) => {
-  const [isLiked, setIsLiked] = useState(false);
+  const [isLiked, setIsLiked] = useState(post.isLiked || false);
   const [likeCount, setLikeCount] = useState(post.likes);
+
+  // Hook for toggling post like
+  const toggleLikeMutation = useTogglePostLike();
+
+  // Update like state when post changes (e.g., navigation)
+  React.useEffect(() => {
+    setIsLiked(post.isLiked || false);
+    setLikeCount(post.likes);
+  }, [post.id, post.isLiked, post.likes]);
 
   const formatDate = (dateString: string) => {
     try {
@@ -58,9 +69,29 @@ const PostContent: React.FC<PostContentProps> = ({ post }) => {
     }
   };
 
-  const handleLike = () => {
+  const handleLike = async () => {
+    if (toggleLikeMutation.isPending) return;
+
+    // Optimistic update
+    const wasLiked = isLiked;
     setIsLiked(!isLiked);
     setLikeCount(prev => isLiked ? prev - 1 : prev + 1);
+
+    try {
+      // Call backend API
+      const response = await toggleLikeMutation.mutateAsync(post.id);
+
+      // Update with actual values from backend
+      if (response?.data) {
+        setLikeCount(response.data.likes);
+        setIsLiked(response.data.isLiked); // Use backend like status
+      }
+    } catch (error) {
+      // Revert optimistic update on error
+      setIsLiked(wasLiked);
+      setLikeCount(prev => wasLiked ? prev + 1 : prev - 1);
+      console.error('Failed to toggle like:', error);
+    }
   };
 
   const handleShare = () => {
@@ -79,7 +110,7 @@ const PostContent: React.FC<PostContentProps> = ({ post }) => {
   const readingTime = Math.max(1, Math.ceil((post.content?.length || 0) / 200));
 
   return (
-    <article className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+    <article className="bg-white overflow-hidden">
       {/* Content */}
       <div className="p-6 lg:p-8">
         {/* Article Meta and Actions */}
@@ -100,87 +131,60 @@ const PostContent: React.FC<PostContentProps> = ({ post }) => {
               <span>{formatRelativeDate(post.created_at)}</span>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleLike}
-                className={`flex items-center space-x-1 px-3 py-1 rounded-lg transition-colors duration-200 text-sm ${
-                  isLiked
-                    ? 'bg-red-50 text-red-600 border border-red-200'
-                    : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600'
-                }`}
-              >
-                <svg className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                </svg>
-                <span className="font-medium">{likeCount}</span>
-              </motion.button>
 
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center space-x-1 px-3 py-1 bg-gray-50 text-gray-600 border border-gray-200 rounded-lg hover:bg-blue-50 hover:text-blue-600 transition-colors duration-200 text-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                </svg>
-                <span className="font-medium">Save</span>
-              </motion.button>
-
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleShare}
-                className="flex items-center space-x-1 px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 text-sm"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                </svg>
-                <span className="font-medium">Share</span>
-              </motion.button>
-            </div>
           </div>
         </div>
 
         {/* Content Body */}
-        <div className="prose prose-base max-w-none mb-6">
-          <div className="text-gray-700 leading-relaxed space-y-4">
-            {post.content?.split('\n\n').map((paragraph, index) => {
-              // Handle quotes
-              if (paragraph.startsWith('"') && paragraph.endsWith('"')) {
+        <div className="mb-6">
+          {(post.content_blocks || post.content) && (() => {
+            try {
+              // Check if we have EditorJS content blocks
+              if (post.content_blocks) {
+                // Parse EditorJS content blocks
+                const contentBlocks = typeof post.content_blocks === 'string'
+                  ? JSON.parse(post.content_blocks)
+                  : post.content_blocks;
+
+                // Use the new EditorJS renderer
                 return (
-                  <blockquote key={index} className="border-l-4 border-blue-500 pl-4 py-3 bg-blue-50 rounded-r-lg my-6">
-                    <p className="text-lg italic text-blue-900 font-medium leading-relaxed">
-                      {paragraph}
-                    </p>
-                  </blockquote>
+                  <EditorJSRenderer
+                    data={contentBlocks}
+                    useTailwindProse={true}
+                    darkMode={false}
+                    className="content-body"
+                  />
+                );
+              } else if (post.content) {
+                // Fallback to legacy content (plain text/HTML)
+                return (
+                  <div
+                    className="prose prose-base max-w-none content-body"
+                    dangerouslySetInnerHTML={{ __html: post.content }}
+                  />
+                );
+              } else {
+                return (
+                  <div className="text-gray-500 italic">
+                    No content available.
+                  </div>
                 );
               }
-
-              // Handle headers (simple detection)
-              if (paragraph.length < 100 && !paragraph.includes('.') && paragraph.trim().length > 0) {
-                return (
-                  <h2 key={index} className="text-xl font-bold text-gray-900 mt-8 mb-4 first:mt-0">
-                    {paragraph}
-                  </h2>
-                );
-              }
-
-              // Regular paragraphs
+            } catch (error) {
+              console.error('Error rendering content blocks:', error);
               return (
-                <p key={index} className="text-base leading-relaxed text-gray-700">
-                  {paragraph}
-                </p>
+                <div className="text-red-600 bg-red-50 p-4 rounded-lg">
+                  <p className="font-medium">Error rendering content</p>
+                  <p className="text-sm mt-1">The content format appears to be invalid.</p>
+                </div>
               );
-            })}
-          </div>
+            }
+          })()}
         </div>
 
         {/* Tags */}
         {post.tags && (
-          <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="mt-8">
             <h3 className="text-sm font-semibold text-gray-900 mb-3">Tags</h3>
             <div className="flex flex-wrap gap-2">
               {post.tags.split(',').map((tag, index) => (
@@ -194,6 +198,61 @@ const PostContent: React.FC<PostContentProps> = ({ post }) => {
             </div>
           </div>
         )}
+
+        {/* Engagement Section */}
+        <div className="mt-8 pt-6 border-t border-gray-200">
+          <div className="flex items-center justify-between">
+            {/* Left side - Like and Views */}
+            <div className="flex items-center space-x-6">
+              {/* Like Button */}
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleLike}
+                className="flex items-center space-x-2 text-gray-600 hover:text-red-600 transition-colors duration-200"
+              >
+                <svg
+                  className={`w-5 h-5 ${isLiked ? 'fill-red-600 text-red-600' : 'fill-none'}`}
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                <span className="font-medium">{likeCount}</span>
+              </motion.button>
+
+              {/* Save Button */}
+              <button className="flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                </svg>
+                <span className="font-medium">Save</span>
+              </button>
+
+              {/* Views */}
+              <div className="flex items-center space-x-2 text-gray-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+                <span className="font-medium">{post.views} views</span>
+              </div>
+            </div>
+
+            {/* Right side - Share Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleShare}
+              className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200 font-medium"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
+              </svg>
+              <span>Share</span>
+            </motion.button>
+          </div>
+        </div>
       </div>
     </article>
   );

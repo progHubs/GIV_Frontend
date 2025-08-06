@@ -21,15 +21,10 @@ export const CONTENT_BLOCK_TYPES = {
   PARAGRAPH: 'paragraph',
   LIST: 'list',
   IMAGE: 'image',
-  VIDEO: 'video',
   QUOTE: 'quote',
   TABLE: 'table',
-  CODE: 'code',
   DELIMITER: 'delimiter',
-  WARNING: 'warning',
   EMBED: 'embed',
-  CHECKLIST: 'checklist',
-  ATTACHES: 'attaches',
 } as const;
 
 export type PostType = typeof POST_TYPES[keyof typeof POST_TYPES];
@@ -83,17 +78,6 @@ export interface ImageBlock extends BaseContentBlock {
   };
 }
 
-export interface VideoBlock extends BaseContentBlock {
-  type: 'video';
-  data: {
-    file: {
-      url: string;
-      tempId?: string;
-    };
-    caption?: string;
-  };
-}
-
 export interface QuoteBlock extends BaseContentBlock {
   type: 'quote';
   data: {
@@ -111,25 +95,9 @@ export interface TableBlock extends BaseContentBlock {
   };
 }
 
-export interface CodeBlock extends BaseContentBlock {
-  type: 'code';
-  data: {
-    code: string;
-    language?: string;
-  };
-}
-
 export interface DelimiterBlock extends BaseContentBlock {
   type: 'delimiter';
   data: Record<string, never>;
-}
-
-export interface WarningBlock extends BaseContentBlock {
-  type: 'warning';
-  data: {
-    title: string;
-    message: string;
-  };
 }
 
 export interface EmbedBlock extends BaseContentBlock {
@@ -144,44 +112,15 @@ export interface EmbedBlock extends BaseContentBlock {
   };
 }
 
-export interface ChecklistBlock extends BaseContentBlock {
-  type: 'checklist';
-  data: {
-    items: Array<{
-      text: string;
-      checked: boolean;
-    }>;
-  };
-}
-
-export interface AttachmentBlock extends BaseContentBlock {
-  type: 'attaches';
-  data: {
-    file: {
-      url: string;
-      name: string;
-      extension: string;
-      size: number;
-      tempId?: string;
-    };
-    title?: string;
-  };
-}
-
-export type ContentBlock = 
+export type ContentBlock =
   | HeaderBlock
   | ParagraphBlock
   | ListBlock
   | ImageBlock
-  | VideoBlock
   | QuoteBlock
   | TableBlock
-  | CodeBlock
   | DelimiterBlock
-  | WarningBlock
-  | EmbedBlock
-  | ChecklistBlock
-  | AttachmentBlock;
+  | EmbedBlock;
 
 export interface ContentBlocks {
   version: string;
@@ -243,6 +182,7 @@ export interface Comment extends BaseEntity {
   content: string;
   parent_id?: string;
   is_approved: boolean;
+  reply_count?: number;
   users?: {
     id: string;
     full_name: string;
@@ -250,6 +190,12 @@ export interface Comment extends BaseEntity {
     role: string;
   };
   children?: Comment[];
+  parent_comment?: {
+    id: string;
+    users?: {
+      full_name: string;
+    };
+  };
 }
 
 export interface CommentCreateData {
@@ -305,6 +251,8 @@ export interface PostQueryResponse {
 export interface CommentQueryParams {
   page?: number;
   limit?: number;
+  type?: 'main' | 'replies';
+  parent_id?: string;
 }
 
 export interface CommentQueryResponse {
@@ -329,6 +277,7 @@ export interface UploadedFile {
 }
 
 export interface FileUploadResponse {
+  file: any;
   success: boolean;
   data: UploadedFile;
   message?: string;

@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import type { Post } from '../../types/content';
 
@@ -11,12 +12,14 @@ interface PostsSidebarProps {
   posts: Post[];
   selectedCategory: string;
   onCategoryChange: (category: string) => void;
+  onTagClick?: (tag: string) => void;
 }
 
-const PostsSidebar: React.FC<PostsSidebarProps> = ({ 
-  posts, 
-  selectedCategory, 
-  onCategoryChange 
+const PostsSidebar: React.FC<PostsSidebarProps> = ({
+  posts,
+  selectedCategory,
+  onCategoryChange,
+  onTagClick
 }) => {
   // Calculate category counts
   const categoryCounts = posts.reduce((acc, post) => {
@@ -106,6 +109,7 @@ const PostsSidebar: React.FC<PostsSidebarProps> = ({
           {popularTags.map(({ tag, count }) => (
             <button
               key={tag}
+              onClick={() => onTagClick?.(tag)}
               className="inline-flex items-center px-3 py-1 bg-gray-100 hover:bg-blue-100 hover:text-blue-700 text-gray-700 rounded-full text-sm transition-colors duration-200"
             >
               #{tag}
@@ -134,9 +138,9 @@ const PostsSidebar: React.FC<PostsSidebarProps> = ({
               </div>
               <div className="flex-1 min-w-0">
                 <h4 className="text-sm font-medium text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
-                  <a href={`/posts/${post.slug}`}>
+                  <Link to={`/posts/${post.slug}`}>
                     {post.title}
-                  </a>
+                  </Link>
                 </h4>
                 <div className="flex items-center space-x-3 mt-1 text-xs text-gray-500">
                   <span className="flex items-center">

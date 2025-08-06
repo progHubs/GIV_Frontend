@@ -4,6 +4,7 @@
  */
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import type { Post } from '../../types/content';
@@ -73,7 +74,7 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({ posts }) => {
             whileHover={{ y: -4 }}
             className="group cursor-pointer"
           >
-            <a href={`/posts/${post.slug}`} className="block">
+            <Link to={`/posts/${post.slug}`} className="block">
               {/* Image */}
               <div className="relative h-48 overflow-hidden rounded-xl mb-4">
                 <img
@@ -154,22 +155,22 @@ const RelatedPosts: React.FC<RelatedPostsProps> = ({ posts }) => {
                   </div>
                 </div>
               </div>
-            </a>
+            </Link>
           </motion.article>
         ))}
       </div>
 
       {/* View All Link */}
       <div className="text-center mt-8 pt-6 border-t border-gray-100">
-        <a
-          href="/posts"
+        <Link
+          to="/posts"
           className="inline-flex items-center px-6 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors duration-200 font-medium"
         >
           <span>View All Posts</span>
           <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
           </svg>
-        </a>
+        </Link>
       </div>
     </section>
   );

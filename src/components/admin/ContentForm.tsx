@@ -10,16 +10,10 @@ import EditorJS from '@editorjs/editorjs';
 import Header from '@editorjs/header';
 import List from '@editorjs/list';
 import Quote from '@editorjs/quote';
-import Marker from '@editorjs/marker';
-import Checklist from '@editorjs/checklist';
-import Warning from '@editorjs/warning';
 import Delimiter from '@editorjs/delimiter';
-import Embed from '@editorjs/embed';
 import Table from '@editorjs/table';
-import Code from '@editorjs/code';
-import Link from '@editorjs/link';
 import Image from '@editorjs/image';
-import Attaches from '@editorjs/attaches';
+import CustomEmbed from '../editor/CustomEmbed.js';
 import { useCreatePost, useUpdatePost, useUploadFile } from '../../hooks/useContent';
 import * as contentApi from '../../lib/contentApi';
 import type { Post, PostCreateData, ContentBlocks } from '../../types/content';
@@ -54,6 +48,45 @@ const ContentForm: React.FC<ContentFormProps> = ({
   const [featureImagePreview, setFeatureImagePreview] = useState<string | undefined>(
     post?.feature_image
   );
+
+  // Helper function to filter out empty blocks
+  const filterEmptyBlocks = (blocks: any[]) => {
+    return blocks.filter((block: any) => {
+      if (!block || !block.type || !block.data) return false;
+
+      try {
+        switch (block.type) {
+          case 'paragraph':
+            return block.data.text && typeof block.data.text === 'string' && block.data.text.trim().length > 0;
+          case 'header':
+            return block.data.text && typeof block.data.text === 'string' && block.data.text.trim().length > 0;
+          case 'list':
+            return block.data.items && Array.isArray(block.data.items) &&
+                   block.data.items.some((item: any) =>
+                     item && typeof item === 'string' && item.trim().length > 0);
+          case 'image':
+            return block.data.file && block.data.file.url;
+          case 'quote':
+            return block.data.text && typeof block.data.text === 'string' && block.data.text.trim().length > 0;
+          case 'table':
+            return block.data.content && Array.isArray(block.data.content) &&
+                   block.data.content.some((row: any[]) =>
+                     Array.isArray(row) && row.some((cell: any) =>
+                       cell && typeof cell === 'string' && cell.trim().length > 0));
+          case 'embed':
+            return (block.data.source && typeof block.data.source === 'string' && block.data.source.trim().length > 0) ||
+                   (block.data.embed && typeof block.data.embed === 'string' && block.data.embed.trim().length > 0);
+          case 'delimiter':
+            return true; // Delimiter blocks are always valid
+          default:
+            return true; // Keep unknown block types
+        }
+      } catch (error) {
+        console.warn('Error validating block:', block, error);
+        return false; // Filter out blocks that cause validation errors
+      }
+    });
+  };
   
   const editorRef = useRef<EditorJS | null>(null);
   const editorContainerRef = useRef<HTMLDivElement>(null);
@@ -99,6 +132,8 @@ const ContentForm: React.FC<ContentFormProps> = ({
   useEffect(() => {
     if (editorContainerRef.current && !editorRef.current) {
       try {
+
+
         editorRef.current = new EditorJS({
           holder: editorContainerRef.current,
           placeholder: 'Start writing your content...',
@@ -123,40 +158,10 @@ const ContentForm: React.FC<ContentFormProps> = ({
                 captionPlaceholder: 'Quote\'s author',
               },
             },
-            marker: {
-              class: Marker,
-              shortcut: 'CMD+SHIFT+M',
-            },
-            checklist: {
-              class: Checklist,
-              inlineToolbar: true,
-            },
+
             delimiter: Delimiter,
             embed: {
-              class: Embed,
-              config: {
-                services: {
-                  youtube: true,
-                  coub: true,
-                  vimeo: true,
-                  vine: true,
-                  imgur: true,
-                  gfycat: true,
-                  instagram: true,
-                  twitter: true,
-                  facebook: true,
-                  codepen: true,
-                  jsfiddle: true,
-                  jsbin: true,
-                  plunker: true,
-                  codesandbox: true,
-                  github: true,
-                  gitlab: true,
-                  bitbucket: true,
-                  pastebin: true,
-                  jsitor: true,
-                },
-              },
+              class: CustomEmbed,
             },
             table: {
               class: Table,
@@ -166,7 +171,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
                 cols: 3,
               },
             },
-            code: Code,
+
             image: {
               class: Image,
               config: {
@@ -177,7 +182,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
                       return {
                         success: 1,
                         file: {
-                          url: response.data.url,
+                          url: response.file?.url || response.data?.url, // Fixed: handle both response structures
                         },
                       };
                     } catch (error) {
@@ -191,12 +196,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
                 },
               },
             },
-            attaches: {
-              class: Attaches,
-              config: {
-                endpoint: '/api/upload',
-              },
-            },
+
           },
           data: post?.content_blocks ? {
             blocks: post.content_blocks.blocks,
@@ -253,16 +253,20 @@ const ContentForm: React.FC<ContentFormProps> = ({
       if (editorRef.current && typeof editorRef.current.save === 'function') {
         try {
           const editorData = await editorRef.current.save();
+
+          // Filter out empty blocks to prevent renderer errors and clean up content
+          const filteredBlocks = filterEmptyBlocks(editorData.blocks);
+
           contentBlocks = {
             version: editorData.version || '2.30.8',
-            blocks: editorData.blocks as any,
+            blocks: filteredBlocks,
           };
           
           // Console log the content blocks structure
           console.log('=== EDITORJS CONTENT BLOCKS STRUCTURE ===');
-          console.log('Full EditorJS Data:', editorData);
+          console.log('Original blocks count:', editorData.blocks.length);
+          console.log('Filtered blocks count:', filteredBlocks.length);
           console.log('Content Blocks:', contentBlocks);
-          console.log('Blocks Array:', editorData.blocks);
           console.log('Version:', editorData.version);
 
           // Debug list blocks specifically
@@ -275,7 +279,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
               console.log('Items Array:', block.data.items);
               console.log('Items Type:', Array.isArray(block.data.items) ? 'array' : typeof block.data.items);
               if (Array.isArray(block.data.items)) {
-                block.data.items.forEach((item, itemIndex) => {
+                block.data.items.forEach((item: any, itemIndex: number) => {
                   console.log(`Item ${itemIndex}:`, item);
                   console.log(`Item ${itemIndex} type:`, typeof item);
                   if (typeof item === 'object' && item !== null) {
@@ -298,7 +302,9 @@ const ContentForm: React.FC<ContentFormProps> = ({
       let uploadedImageUrl = data.feature_image;
       if (featureImageFile) {
         const uploadResult = await uploadMutation.mutateAsync({ file: featureImageFile });
-        uploadedImageUrl = uploadResult.data.url;
+        // Backend returns { success: 1, file: { url: ... } }
+        // Handle both possible response structures for compatibility
+        uploadedImageUrl = uploadResult.file?.url || uploadResult.data?.url;
       }
 
       const postData: PostCreateData = {
@@ -349,12 +355,23 @@ const ContentForm: React.FC<ContentFormProps> = ({
       if (editorRef.current && typeof editorRef.current.save === 'function') {
         try {
           const editorData = await editorRef.current.save();
+
+          // Filter out empty blocks to prevent renderer errors
+          const filteredBlocks = filterEmptyBlocks(editorData.blocks);
+
           contentBlocks = {
             version: editorData.version || '2.30.8',
-            blocks: editorData.blocks as any,
+            blocks: filteredBlocks,
           };
+
+          console.log('Preview: Filtered blocks count:', filteredBlocks.length, 'from', editorData.blocks.length);
         } catch (error) {
           console.error('Error saving editor data for preview:', error);
+          // Provide fallback empty content blocks
+          contentBlocks = {
+            version: '2.30.8',
+            blocks: [],
+          };
         }
       }
 
@@ -672,10 +689,36 @@ const ContentForm: React.FC<ContentFormProps> = ({
                   padding: 8px 12px !important;
                   border: 1px solid #e5e7eb !important;
                 }
-                .ce-embed {
+                .ce-embed, .embed-tool {
                   text-align: left !important;
                   margin: 0 !important;
                   padding: 24px 0 !important;
+                }
+                .embed-tool__input {
+                  width: 100% !important;
+                  padding: 12px 16px !important;
+                  border: 1px solid #e5e7eb !important;
+                  border-radius: 8px !important;
+                  font-size: 14px !important;
+                  outline: none !important;
+                  transition: border-color 0.2s !important;
+                }
+                .embed-tool__input:focus {
+                  border-color: #3b82f6 !important;
+                  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+                }
+                .embed-tool__content {
+                  width: 100% !important;
+                }
+                .embed-tool__content iframe {
+                  width: 100% !important;
+                  border-radius: 8px !important;
+                }
+                .embed-tool__caption {
+                  margin-top: 8px !important;
+                  font-size: 14px !important;
+                  color: #6b7280 !important;
+                  text-align: center !important;
                 }
                 .ce-image {
                   text-align: left !important;

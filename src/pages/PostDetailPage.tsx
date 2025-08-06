@@ -3,55 +3,116 @@
  * Individual post page with full content and comments
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ThemeProvider } from '../theme';
 import ModernNavigation from '../components/navigation/ModernNavigation';
 import Footer from '../components/layout/Footer';
 import PostContent from '../components/posts/PostContent';
-import PostComments from '../components/posts/PostComments';
+import CommentForm from '../components/posts/CommentForm';
+import CommentDisplay from '../components/posts/CommentDisplay';
 import RelatedPosts from '../components/posts/RelatedPosts';
 import PostSidebar from '../components/posts/PostSidebar';
-import { MOCK_POSTS, MOCK_COMMENTS } from '../constants/content';
+import {
+  usePostBySlug,
+  useCommentsByPost,
+  useRelatedPosts,
+  useIncrementPostView
+} from '../hooks/useContent';
 import type { Post, Comment } from '../types/content';
 
 const PostDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
-  const [relatedPosts, setRelatedPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
 
+  // Fetch post by slug
+  const {
+    data: postResponse,
+    isLoading: postLoading,
+    error: postError
+  } = usePostBySlug(slug || '', !!slug);
+
+  const post = postResponse?.data;
+
+  // Fetch comments for this post
+  const {
+    data: commentsResponse,
+    isLoading: commentsLoading,
+    refetch: refetchComments
+  } = useCommentsByPost(post?.id || '', !!post?.id);
+
+  // Fetch related posts
+  const {
+    data: relatedResponse,
+    isLoading: relatedLoading
+  } = useRelatedPosts(post?.id || '', !!post?.id);
+
+  // Increment post view count
+  const incrementViewMutation = useIncrementPostView();
+
+  const isLoading = postLoading || commentsLoading || relatedLoading;
+  const relatedPosts = relatedResponse?.data || [];
+
+  // Handle navigation errors
   useEffect(() => {
     if (!slug) {
       navigate('/posts');
       return;
     }
 
-    // Find the post by slug
-    const foundPost = MOCK_POSTS.find(p => p.slug === slug);
-    
-    if (!foundPost) {
+    if (postError) {
+      console.error('Error loading post:', postError);
       navigate('/posts');
       return;
     }
+  }, [slug, navigate, postError]);
 
-    setPost(foundPost);
+  // Increment view count only once when post loads
+  useEffect(() => {
+    if (post?.id && !postLoading && !incrementViewMutation.isPending) {
+      incrementViewMutation.mutate(post.id);
+    }
+  }, [post?.id, postLoading]); // Removed incrementViewMutation from dependencies
 
-    // Get comments for this post
-    const postComments = MOCK_COMMENTS.filter(comment => comment.post_id === foundPost.id);
-    setComments(postComments);
+  // Update comments when data loads
+  useEffect(() => {
+    if (commentsResponse?.data) {
+      setComments(commentsResponse.data);
+    }
+  }, [commentsResponse?.data]);
 
-    // Get related posts (same type, excluding current post)
-    const related = MOCK_POSTS
-      .filter(p => p.id !== foundPost.id && p.post_type === foundPost.post_type)
-      .slice(0, 3);
-    setRelatedPosts(related);
+  // Memoize the onCommentAdd callback to prevent unnecessary re-renders
+  const handleCommentAdd = useCallback(async (comment: Comment) => {
+    // Refetch comments to get the proper nested structure
+    await refetchComments();
+  }, [refetchComments]);
 
-    setIsLoading(false);
-  }, [slug, navigate]);
+  // Error state
+  if (postError && !postLoading) {
+    return (
+      <ThemeProvider defaultMode="light">
+        <div className="min-h-screen bg-theme-background">
+          <ModernNavigation />
+          <div className="pt-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div className="text-center">
+              <h1 className="text-2xl font-bold text-gray-900 mb-4">Post Not Found</h1>
+              <p className="text-gray-600 mb-6">The post you're looking for doesn't exist or has been removed.</p>
+              <button
+                onClick={() => navigate('/posts')}
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Back to Posts
+              </button>
+            </div>
+          </div>
+          <Footer />
+        </div>
+      </ThemeProvider>
+    );
+  }
 
+  // Loading state
   if (isLoading) {
     return (
       <ThemeProvider defaultMode="light">
@@ -111,7 +172,7 @@ const PostDetailPage: React.FC = () => {
 
         {/* Hero Section - Full Width */}
         {post.feature_image && (
-          <div className="relative h-[400px] sm:h-[500px] lg:h-[600px] overflow-hidden">
+          <div className="pt-16 relative h-[400px] sm:h-[500px] lg:h-[600px] overflow-hidden">
             <img
               src={post.feature_image}
               alt={post.title}
@@ -210,17 +271,22 @@ const PostDetailPage: React.FC = () => {
                 {/* Post Content (without hero image) */}
                 <PostContent post={post} />
 
-                {/* Comments Section */}
-                <PostComments
+                {/* Comment Form */}
+                <CommentForm
                   postId={post.id}
-                  comments={comments}
-                  onCommentAdd={(comment) => setComments([...comments, comment])}
+                  onCommentAdd={handleCommentAdd}
+                />
+
+                {/* Comments Display - Same Width as Content */}
+                <CommentDisplay
+                  postId={post.id}
+                  onCommentAdd={handleCommentAdd}
                 />
               </div>
 
               {/* Sidebar - Right Column */}
               <div className="lg:col-span-1">
-                <div className="sticky top-24">
+                <div>
                   <PostSidebar
                     relatedPosts={relatedPosts}
                     currentPostId={post.id}

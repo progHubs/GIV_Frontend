@@ -42,15 +42,7 @@ declare module '@editorjs/quote' {
   }
 }
 
-declare module '@editorjs/code' {
-  import { BlockTool } from '@editorjs/editorjs';
-  export default class Code implements BlockTool {
-    constructor(config: any);
-    render(): HTMLElement;
-    save(): any;
-    static get toolbox(): any;
-  }
-}
+
 
 declare module '@editorjs/image' {
   import { BlockTool } from '@editorjs/editorjs';
@@ -82,25 +74,7 @@ declare module '@editorjs/delimiter' {
   }
 }
 
-declare module '@editorjs/warning' {
-  import { BlockTool } from '@editorjs/editorjs';
-  export default class Warning implements BlockTool {
-    constructor(config: any);
-    render(): HTMLElement;
-    save(): any;
-    static get toolbox(): any;
-  }
-}
 
-declare module '@editorjs/checklist' {
-  import { BlockTool } from '@editorjs/editorjs';
-  export default class Checklist implements BlockTool {
-    constructor(config: any);
-    render(): HTMLElement;
-    save(): any;
-    static get toolbox(): any;
-  }
-}
 
 declare module '@editorjs/embed' {
   import { BlockTool } from '@editorjs/editorjs';
@@ -112,27 +86,7 @@ declare module '@editorjs/embed' {
   }
 }
 
-declare module '@editorjs/marker' {
-  import { InlineTool } from '@editorjs/editorjs';
-  export default class Marker implements InlineTool {
-    constructor(config: any);
-    render(): HTMLElement;
-    surround(): void;
-    checkState(): boolean;
-    static get isInline(): boolean;
-    static get sanitize(): any;
-  }
-}
 
-declare module '@editorjs/attaches' {
-  import { BlockTool } from '@editorjs/editorjs';
-  export default class AttachesTool implements BlockTool {
-    constructor(config: any);
-    render(): HTMLElement;
-    save(): any;
-    static get toolbox(): any;
-  }
-}
 
 declare module '@editorjs/link' {
   import { InlineTool } from '@editorjs/editorjs';

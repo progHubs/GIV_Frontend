@@ -11,7 +11,7 @@ const renderHeaderBlock = (block: any): string => {
   const { text, level } = block.data;
   const sanitizedText = escapeHtml(text || '');
   const headingLevel = Math.min(Math.max(level || 1, 1), 6);
-  
+
   return `<h${headingLevel} class="content-header content-header-${headingLevel}">${sanitizedText}</h${headingLevel}>`;
 };
 
@@ -32,15 +32,15 @@ const renderListBlock = (block: any): string => {
   const { style, items } = block.data;
   const listType = style === 'ordered' ? 'ol' : 'ul';
   const listClass = `content-list content-list-${style}`;
-  
+
   if (!Array.isArray(items) || items.length === 0) {
     return '';
   }
-  
+
   const listItems = items
     .map(item => `<li class="content-list-item">${escapeHtml(item)}</li>`)
     .join('');
-  
+
   return `<${listType} class="${listClass}">${listItems}</${listType}>`;
 };
 
@@ -329,28 +329,31 @@ export const renderContentBlocksToText = (contentBlocks: ContentBlocks): string 
     return '';
   }
   
+  const stripHtmlTags = (text: string): string => {
+    if (!text) return '';
+    return text.replace(/<[^>]*>/g, '');
+  };
+  
   return contentBlocks.blocks
     .map(block => {
       switch (block.type) {
         case 'header':
-          return block.data.text || '';
+          return stripHtmlTags(block.data.text || '');
         case 'paragraph':
-          return block.data.text || '';
+          return stripHtmlTags(block.data.text || '');
         case 'list':
-          return Array.isArray(block.data.items) ? block.data.items.join('\n') : '';
+          return Array.isArray(block.data.items) 
+            ? block.data.items.map(item => stripHtmlTags(item)).join('\n') 
+            : '';
         case 'quote':
-          return `"${block.data.text || ''}"${block.data.caption ? ` - ${block.data.caption}` : ''}`;
+          return `"${stripHtmlTags(block.data.text || '')}"${block.data.caption ? ` - ${stripHtmlTags(block.data.caption)}` : ''}`;
         case 'table':
           return Array.isArray(block.data.content) 
-            ? block.data.content.map(row => Array.isArray(row) ? row.join(' | ') : '').join('\n')
-            : '';
-        case 'code':
-          return block.data.code || '';
-        case 'warning':
-          return `${block.data.title || ''}: ${block.data.message || ''}`;
-        case 'checklist':
-          return Array.isArray(block.data.items) 
-            ? block.data.items.map(item => `${item.checked ? '✓' : '○'} ${item.text || ''}`).join('\n')
+            ? block.data.content.map(row => 
+                Array.isArray(row) 
+                  ? row.map(cell => stripHtmlTags(cell || '')).join(' | ') 
+                  : ''
+              ).join('\n')
             : '';
         default:
           return '';

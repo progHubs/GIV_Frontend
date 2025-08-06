@@ -91,6 +91,17 @@ export const useFeaturedPosts = (params?: PostQueryParams) => {
 };
 
 /**
+ * Hook to get recent posts
+ */
+export const useRecentPosts = (params?: PostQueryParams) => {
+  return useQuery({
+    queryKey: ['posts', 'recent', params],
+    queryFn: () => contentApi.getRecentPosts(params),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+};
+
+/**
  * Hook to get posts by author
  */
 export const usePostsByAuthor = (authorId: string, params?: PostQueryParams, enabled = true) => {
@@ -277,6 +288,18 @@ export const useCommentsByPost = (postId: string, params?: CommentQueryParams, e
     queryKey: contentQueryKeys.commentsByPost(postId, params),
     queryFn: () => contentApi.getCommentsByPost(postId, params),
     enabled: enabled && !!postId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+  });
+};
+
+/**
+ * Hook to get replies for a specific comment
+ */
+export const useCommentReplies = (postId: string, parentId: string, params?: CommentQueryParams, enabled = true) => {
+  return useQuery({
+    queryKey: [...contentQueryKeys.commentsByPost(postId), 'replies', parentId, params],
+    queryFn: () => contentApi.getCommentReplies(postId, parentId, params),
+    enabled: enabled && !!postId && !!parentId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };

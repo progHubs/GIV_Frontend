@@ -4,8 +4,10 @@
  */
 
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
+import { useRecentPosts } from '../../hooks/useContent';
 import type { Post } from '../../types/content';
 
 interface PostSidebarProps {
@@ -17,6 +19,14 @@ const PostSidebar: React.FC<PostSidebarProps> = ({ relatedPosts, currentPostId }
   const [email, setEmail] = useState('');
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+
+  // Fetch recent posts separately from related posts
+  const { data: recentPostsResponse, isLoading: recentPostsLoading } = useRecentPosts({
+    limit: 6,
+    exclude_id: currentPostId // Exclude current post from recent posts
+  });
+
+  const recentPosts = recentPostsResponse?.data || [];
 
   const formatDate = (dateString: string) => {
     try {
@@ -81,7 +91,7 @@ const PostSidebar: React.FC<PostSidebarProps> = ({ relatedPosts, currentPostId }
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 className="group"
               >
-                <a href={`/posts/${post.slug}`} className="block">
+                <Link to={`/posts/${post.slug}`} className="block">
                   <div className="flex space-x-3">
                     {/* Image */}
                     <div className="relative w-16 h-16 flex-shrink-0 overflow-hidden rounded">
@@ -110,7 +120,7 @@ const PostSidebar: React.FC<PostSidebarProps> = ({ relatedPosts, currentPostId }
                       </div>
                     </div>
                   </div>
-                </a>
+                </Link>
               </motion.article>
             ))}
           </div>
@@ -182,31 +192,67 @@ const PostSidebar: React.FC<PostSidebarProps> = ({ relatedPosts, currentPostId }
 
       {/* Recent Articles */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-100 p-4">
-        <h3 className="text-base font-bold text-gray-900 mb-4">Recent Articles</h3>
-        <div className="space-y-3">
-          {relatedPosts.slice(3, 6).map((post, index) => (
-            <motion.article
-              key={post.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.1 }}
-              className="group"
-            >
-              <a href={`/posts/${post.slug}`} className="block">
-                <h4 className="text-xs font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2 mb-1">
-                  {post.title}
-                </h4>
-                <div className="flex items-center space-x-1 text-xs text-gray-500">
-                  <span className={`px-1 py-0.5 rounded text-xs font-medium ${getPostTypeColor(post.post_type)}`}>
-                    {getPostTypeLabel(post.post_type)}
-                  </span>
-                  <span>•</span>
-                  <span>{formatDate(post.created_at)}</span>
-                </div>
-              </a>
-            </motion.article>
-          ))}
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-base font-bold text-gray-900">Recent Articles</h3>
+          {recentPostsLoading && (
+            <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          )}
         </div>
+
+        {recentPostsLoading ? (
+          <div className="space-y-3">
+            {[...Array(3)].map((_, index) => (
+              <div key={index} className="animate-pulse">
+                <div className="h-3 bg-gray-200 rounded mb-2"></div>
+                <div className="h-2 bg-gray-100 rounded w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : recentPosts.length > 0 ? (
+          <div className="space-y-4">
+            {recentPosts.slice(0, 4).map((post, index) => (
+              <motion.article
+                key={post.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: index * 0.1 }}
+                className="group"
+              >
+                <Link to={`/posts/${post.slug}`} className="block">
+                  <div className="flex space-x-3">
+                    {/* Thumbnail */}
+                    <div className="relative w-12 h-12 flex-shrink-0 overflow-hidden rounded">
+                      <img
+                        src={post.feature_image || 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=96&h=96&fit=crop&crop=center'}
+                        alt={post.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 min-w-0">
+                      <h4 className="text-xs font-medium text-gray-900 group-hover:text-blue-600 transition-colors duration-200 line-clamp-2 mb-1 leading-tight">
+                        {post.title}
+                      </h4>
+                      <div className="flex items-center space-x-1 text-xs text-gray-500">
+                        <span className={`px-1 py-0.5 rounded text-xs font-medium ${getPostTypeColor(post.post_type)}`}>
+                          {getPostTypeLabel(post.post_type)}
+                        </span>
+                        <span>•</span>
+                        <span>{formatDate(post.created_at)}</span>
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </motion.article>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-4">
+            <p className="text-sm text-gray-500">No recent articles available</p>
+          </div>
+        )}
       </div>
     </div>
   );
