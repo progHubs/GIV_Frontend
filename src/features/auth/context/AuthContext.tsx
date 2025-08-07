@@ -136,12 +136,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       dispatch({ type: 'AUTH_LOGOUT' });
     };
 
+    const handleTokenCleared = () => {
+      // Just update auth state without redirect - for public endpoints with invalid tokens
+      dispatch({ type: 'AUTH_LOGOUT' });
+    };
+
     window.addEventListener('auth:logout', handleLogout);
     window.addEventListener('auth:complete-logout', handleCompleteLogout);
+    window.addEventListener('auth:token-cleared', handleTokenCleared);
 
     return () => {
       window.removeEventListener('auth:logout', handleLogout);
       window.removeEventListener('auth:complete-logout', handleCompleteLogout);
+      window.removeEventListener('auth:token-cleared', handleTokenCleared);
     };
   }, []);
 

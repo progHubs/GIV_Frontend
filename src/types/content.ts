@@ -181,6 +181,7 @@ export interface Comment extends BaseEntity {
   user_id: string;
   content: string;
   parent_id?: string;
+  root_comment?: string;
   is_approved: boolean;
   reply_count?: number;
   users?: {

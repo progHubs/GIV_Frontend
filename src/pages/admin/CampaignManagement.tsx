@@ -4,12 +4,13 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import CampaignManagementTable from '../../components/admin/CampaignManagementTable';
 import CampaignManagementFilters from '../../components/admin/CampaignManagementFilters';
 import CampaignForm from '../../components/admin/CampaignForm';
 import CampaignStats from '../../components/admin/CampaignStatsAdmin';
+import CampaignPartnerManagement from '../../components/admin/CampaignPartnerManagement';
 import {
   useCampaigns,
   useCampaignStats,
@@ -23,6 +24,7 @@ const CampaignManagement: React.FC = () => {
   const navigate = useNavigate();
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null);
+  const [managingPartnersCampaign, setManagingPartnersCampaign] = useState<Campaign | null>(null);
   const [filters, setFilters] = useState<CampaignFilters>({
     page: 1,
     limit: 10,
@@ -89,6 +91,11 @@ const CampaignManagement: React.FC = () => {
     } catch (err: any) {
       alert(err.message || 'Failed to delete campaign');
     }
+  };
+
+  // Handle partner management
+  const handleManagePartners = (campaign: Campaign) => {
+    setManagingPartnersCampaign(campaign);
   };
 
   // Handle filter changes (memoized to prevent re-renders)
@@ -184,6 +191,7 @@ const CampaignManagement: React.FC = () => {
                 totalPages={campaignData.totalPages}
                 onEdit={setEditingCampaign}
                 onDelete={handleDeleteCampaign}
+                onManagePartners={handleManagePartners}
                 onRetry={() => window.location.reload()}
                 onPageChange={page => handleFiltersChange({ page })}
               />
@@ -210,6 +218,17 @@ const CampaignManagement: React.FC = () => {
           onCancel={() => setEditingCampaign(null)}
         />
       )}
+
+      {/* Campaign Partner Management Modal */}
+      <AnimatePresence>
+        {managingPartnersCampaign && (
+          <CampaignPartnerManagement
+            campaignId={managingPartnersCampaign.id}
+            campaignTitle={managingPartnersCampaign.title}
+            onClose={() => setManagingPartnersCampaign(null)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

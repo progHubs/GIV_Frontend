@@ -384,7 +384,7 @@ export const useUpdateComment = () => {
 };
 
 /**
- * Hook to delete a comment
+ * Hook to delete a comment (user can only delete their own)
  */
 export const useDeleteComment = () => {
   const queryClient = useQueryClient();
@@ -399,6 +399,43 @@ export const useDeleteComment = () => {
     onError: (error: any) => {
       toast.error(error.message || 'Failed to delete comment');
     },
+  });
+};
+
+/**
+ * Hook for admin to delete any comment
+ */
+export const useAdminDeleteComment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (commentId: string) => contentApi.adminDeleteComment(commentId),
+    onSuccess: () => {
+      // Invalidate all comments queries
+      queryClient.invalidateQueries({ queryKey: contentQueryKeys.comments() });
+      toast.success('Comment deleted successfully!');
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete comment');
+    },
+  });
+};
+
+/**
+ * Hook to get all comments for admin management
+ */
+export const useAllCommentsForAdmin = (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sort?: string;
+  filter?: string;
+}, enabled = true) => {
+  return useQuery({
+    queryKey: ['allCommentsForAdmin', params],
+    queryFn: () => contentApi.getAllCommentsForAdmin(params),
+    enabled: enabled,
+    staleTime: 30 * 1000, // 30 seconds
   });
 };
 

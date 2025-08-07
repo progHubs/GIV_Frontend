@@ -1,6 +1,7 @@
 // Export all custom hooks
 export * from './useAuth';
 export * from './useCampaigns';
+export * from './useCampaignPartners';
 export * from './useDonations';
 export * from './useMembership';
 export * from './useVolunteer';

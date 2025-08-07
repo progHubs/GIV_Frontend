@@ -9,6 +9,9 @@ export * from './api';
 // Campaign types
 export * from './campaign';
 
+// Campaign Partner types
+export * from './campaignPartner';
+
 // Donation types
 export * from './donation';
 

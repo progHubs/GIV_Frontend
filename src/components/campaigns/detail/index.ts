@@ -6,3 +6,4 @@ export { default as DonationSidebar } from './DonationSidebar';
 export { default as RelatedCampaigns } from './RelatedCampaigns';
 export { default as CampaignDetailSkeleton } from './CampaignDetailSkeleton';
 export { default as VolunteerSection } from './VolunteerSection';
+export { default as CampaignPartnersSection } from './CampaignPartnersSection';

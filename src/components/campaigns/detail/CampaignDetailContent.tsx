@@ -7,7 +7,9 @@ import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { useCampaignDonations } from '../../../hooks/useDonations';
 import { useStripeUtils } from '../../../hooks/useStripe';
+import { formatCurrency, formatDate } from '../../../lib/utils';
 import VolunteerSection from './VolunteerSection';
+import CampaignPartnersSection from './CampaignPartnersSection';
 import ErrorBoundary from '../../common/ErrorBoundary';
 import type { Campaign } from '../../../types';
 
@@ -218,6 +220,9 @@ const CampaignDetailContent: React.FC<CampaignDetailContentProps> = ({ campaign 
                 </div>
               </div>
             </div>
+
+            {/* Campaign Partners Section */}
+            <CampaignPartnersSection campaignId={campaign.id} />
           </motion.div>
         )}
 

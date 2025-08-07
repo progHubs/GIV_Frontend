@@ -50,9 +50,31 @@ const CommentDisplay: React.FC<CommentDisplayProps> = ({
   }, []);
 
   const handleCommentAdded = useCallback(async (comment: Comment) => {
-    // Reset to first page and refetch to get updated sorting
-    setCurrentPage(1);
-    await refetchComments();
+    // Check if this is a delete operation (empty comment object)
+    if (!comment.id) {
+      // This is a delete operation, refetch to get updated list
+      await refetchComments();
+      onCommentAdd(comment);
+      return;
+    }
+
+    // For new main comments that are approved, add them immediately to the top of the list
+    if (!comment.parent_id && comment.is_approved) {
+      setAllComments(prev => [comment, ...prev]);
+
+      // Reset to first page and refetch to get updated data (reply counts, etc.)
+      setCurrentPage(1);
+
+      // Refetch in the background to ensure consistency
+      setTimeout(() => {
+        refetchComments();
+      }, 500); // Longer delay to avoid overwriting immediate addition
+    } else {
+      // For unapproved comments or replies, just refetch
+      setCurrentPage(1);
+      await refetchComments();
+    }
+
     onCommentAdd(comment);
   }, [refetchComments, onCommentAdd]);
 

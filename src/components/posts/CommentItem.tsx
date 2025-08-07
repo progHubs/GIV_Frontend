@@ -7,7 +7,8 @@ import React, { useState, useCallback, memo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { formatDistanceToNow } from 'date-fns';
 import { toast } from 'react-hot-toast';
-import { useReplyToComment, useCommentReplies } from '../../hooks/useContent';
+import { useReplyToComment, useCommentReplies, useDeleteComment, useAdminDeleteComment } from '../../hooks/useContent';
+import { useAuth } from '../../hooks/useAuth';
 import type { Comment } from '../../types/content';
 
 interface CommentItemProps {
@@ -31,9 +32,17 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showReplies, setShowReplies] = useState(false);
   const [repliesPage, setRepliesPage] = useState(1);
+  const [allReplies, setAllReplies] = useState<Comment[]>([]);
 
   // Hook for reply operations
   const replyToCommentMutation = useReplyToComment();
+
+  // Hook for delete operations
+  const deleteCommentMutation = useDeleteComment();
+  const adminDeleteCommentMutation = useAdminDeleteComment();
+
+  // Get current user
+  const { user } = useAuth();
 
   // Hook for loading replies (only for main comments)
   const {
@@ -48,7 +57,17 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
   );
 
   const hasReplies = (comment.reply_count || 0) > 0;
-  const loadedReplies = repliesData?.data || [];
+
+  // Update allReplies when new data arrives
+  React.useEffect(() => {
+    if (repliesData?.data) {
+      if (repliesPage === 1) {
+        setAllReplies(repliesData.data);
+      } else {
+        setAllReplies(prev => [...prev, ...repliesData.data]);
+      }
+    }
+  }, [repliesData?.data, repliesPage]);
 
   // Memoized format date function
   const formatDate = useCallback((dateString: string) => {
@@ -96,14 +115,32 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
       });
 
       if (response?.data) {
-        onCommentAdd(response.data);
         setReplyContent('');
         setIsReplying(false);
-        // Refresh replies if they're currently shown
+
+        // Add the new reply to the local replies list immediately
         if (showReplies) {
+          setAllReplies(prev => [...prev, response.data]);
+          // Also refetch to ensure consistency
           refetchReplies();
+        } else {
+          // If replies aren't shown, just show them now with the new reply
+          setShowReplies(true);
+          setAllReplies([response.data]);
         }
-        toast.success('Reply added successfully!');
+
+        // Notify parent component (this will update reply counts)
+        onCommentAdd(response.data);
+
+        // Show appropriate success message based on user role
+        if (user?.role === 'admin') {
+          toast.success('Reply added successfully!');
+        } else {
+          toast.success('Reply submitted! It will be visible after admin approval.', {
+            duration: 10000, // 10 seconds
+            icon: '⏳',
+          });
+        }
       }
     } catch (error: any) {
       console.error('Failed to add reply:', error);
@@ -115,23 +152,56 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
 
   const handleShowReplies = () => {
     setShowReplies(true);
-    setRepliesPage(1);
+    // Don't clear existing replies or reset page - keep what we have loaded
+    // Only reset if we have no replies loaded yet
+    if (allReplies.length === 0) {
+      setRepliesPage(1);
+    }
   };
 
   const handleLoadMoreReplies = () => {
     setRepliesPage(prev => prev + 1);
   };
 
+  const handleDeleteComment = async () => {
+    if (!window.confirm('Are you sure you want to delete this comment?')) {
+      return;
+    }
+
+    try {
+      const isOwner = user?.id === comment.user_id;
+      const isAdmin = user?.role === 'admin';
+
+      if (isAdmin && !isOwner) {
+        // Admin deleting someone else's comment
+        await adminDeleteCommentMutation.mutateAsync(comment.id);
+      } else if (isOwner) {
+        // User deleting their own comment
+        await deleteCommentMutation.mutateAsync(comment.id);
+      }
+
+      // Notify parent component that a comment was deleted
+      // The parent should handle removing it from the list
+      onCommentAdd({} as Comment); // Trigger refresh
+    } catch (error: any) {
+      console.error('Failed to delete comment:', error);
+      toast.error(error.message || 'Failed to delete comment');
+    }
+  };
+
   // Format content with @mention for nested replies
-  const formatContent = (content: string) => {
-    if (!isMainComment && parentCommentAuthor) {
+  const formatContent = () => {
+    // Check if this is a reply to a sub-comment (has parent_comment info)
+    const mentionAuthor = parentCommentAuthor || comment.parent_comment?.users?.full_name;
+
+    if (!isMainComment && mentionAuthor) {
       return (
         <span>
-          <span className="text-blue-600 font-medium">@{parentCommentAuthor}</span> {content}
+          <span className="text-blue-600 font-medium">@{mentionAuthor}</span> {comment.content}
         </span>
       );
     }
-    return <span>{content}</span>;
+    return <span>{comment.content}</span>;
   };
 
   return (
@@ -172,7 +242,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
               )}
             </div>
             <p className="text-gray-800 text-sm leading-relaxed break-words">
-              {formatContent(comment.content)}
+              {formatContent()}
             </p>
           </div>
 
@@ -187,22 +257,40 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
             >
               Reply
             </button>
-            <button className="text-xs text-gray-600 hover:text-blue-600 font-medium transition-colors duration-200">
-              Like
-            </button>
+            {/* Delete button - show if user owns comment or is admin */}
+            {user && (user.id === comment.user_id || user.role === 'admin') && (
+              <button
+                onClick={handleDeleteComment}
+                className="text-xs text-gray-600 hover:text-red-600 font-medium transition-colors duration-200"
+              >
+                Delete
+              </button>
+            )}
           </div>
 
           {/* Reply Form */}
           <AnimatePresence>
             {isReplying && (
-              <motion.form
+              <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
                 transition={{ duration: 0.3 }}
-                onSubmit={handleSubmitReply}
                 className="mt-3 ml-3"
               >
+                {/* Approval Notice for Non-Admin Users */}
+                {user?.role !== 'admin' && (
+                  <div className="mb-3 p-2 bg-amber-50 border border-amber-200 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-4 h-4 text-amber-600 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-xs text-amber-800">Reply will be visible after admin approval</p>
+                    </div>
+                  </div>
+                )}
+
+                <form onSubmit={handleSubmitReply}>
                 <div className="flex space-x-2">
                   <img
                     src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face"
@@ -238,7 +326,8 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
                     </div>
                   </div>
                 </div>
-              </motion.form>
+                </form>
+              </motion.div>
             )}
           </AnimatePresence>
 
@@ -259,7 +348,7 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
                   </svg>
-                  <span>Show {comment.reply_count} replies</span>
+                  <span>Show replies</span>
                 </button>
               )}
 
@@ -272,14 +361,16 @@ const CommentItem: React.FC<CommentItemProps> = memo(({
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {loadedReplies.map((reply) => (
+                    {allReplies.map((reply) => (
                       <CommentItem
                         key={reply.id}
                         comment={reply}
                         isMainComment={false}
                         postId={postId}
                         onCommentAdd={onCommentAdd}
-                        parentCommentAuthor={comment.users?.full_name}
+                        parentCommentAuthor={
+                          reply.parent_comment?.users?.full_name || comment.users?.full_name
+                        }
                       />
                     ))}
 

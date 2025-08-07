@@ -9,6 +9,9 @@ export interface FileUploadProps {
   accept?: string;
   multiple?: boolean;
   onFileSelect: (files: File | File[]) => void;
+  onFileRemove?: () => void;
+  selectedFile?: File | null;
+  existingFileUrl?: string | null;
   children?: React.ReactNode;
   className?: string;
   disabled?: boolean;
@@ -22,6 +25,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   accept,
   multiple = false,
   onFileSelect,
+  onFileRemove,
+  selectedFile,
+  existingFileUrl,
   children,
   className,
   disabled = false,
@@ -92,6 +98,33 @@ const FileUpload: React.FC<FileUploadProps> = ({
       }
     }
   };
+
+  // Generate preview for selected file
+  React.useEffect(() => {
+    if (selectedFile && selectedFile.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => setPreview(e.target?.result as string);
+      reader.readAsDataURL(selectedFile);
+    } else {
+      setPreview(null);
+    }
+  }, [selectedFile]);
+
+  // Handle file removal
+  const handleRemoveFile = () => {
+    if (onFileRemove) {
+      onFileRemove();
+    }
+    setPreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  // Determine what to display
+  const hasSelectedFile = selectedFile;
+  const hasExistingFile = existingFileUrl && !hasSelectedFile;
+  const displayUrl = hasSelectedFile ? preview : existingFileUrl;
 
   const handleClick = () => {
     if (!disabled) {
@@ -191,8 +224,51 @@ const FileUpload: React.FC<FileUploadProps> = ({
         </motion.div>
       )}
 
-      {/* Preview */}
-      {showPreview && preview && (
+      {/* Selected/Existing File Display */}
+      {(hasSelectedFile || hasExistingFile) && (
+        <div className="mt-4">
+          <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+            <div className="flex items-center space-x-3">
+              {displayUrl && displayUrl.match(/\.(jpg|jpeg|png|gif|webp)$/i) ? (
+                <img
+                  src={displayUrl}
+                  alt="File preview"
+                  className="w-12 h-12 object-cover rounded border"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded border flex items-center justify-center">
+                  <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
+                </div>
+              )}
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                  {hasSelectedFile ? selectedFile.name : 'Existing file'}
+                </p>
+                <p className="text-xs text-gray-500">
+                  {hasSelectedFile ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : 'Previously uploaded'}
+                </p>
+              </div>
+            </div>
+            {onFileRemove && (
+              <button
+                type="button"
+                onClick={handleRemoveFile}
+                className="p-1 text-gray-400 hover:text-red-500 transition-colors"
+                title="Remove file"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Legacy Preview (for backward compatibility) */}
+      {showPreview && preview && !hasSelectedFile && !hasExistingFile && (
         <div className="mt-4">
           <img
             src={preview}

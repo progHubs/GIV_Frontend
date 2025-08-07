@@ -25,6 +25,9 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
   // File upload states
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<File | null>(null);
+  const [hasGoal, setHasGoal] = useState<boolean>(
+    campaign ? campaign.goal_amount !== null : false
+  );
   const [imagePreview, setImagePreview] = useState<string | null>(campaign?.image_url || null);
   const [videoPreview, setVideoPreview] = useState<string | null>(campaign?.video_url || null);
   const [fileErrors, setFileErrors] = useState<{ image?: string; video?: string }>({});
@@ -119,7 +122,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
       ? {
           title: campaign.title,
           description: campaign.description,
-          goal_amount: parseFloat(campaign.goal_amount),
+          goal_amount: campaign.goal_amount ? parseFloat(campaign.goal_amount) : undefined,
           start_date: formatDateForInput(campaign.start_date),
           end_date: formatDateForInput(campaign.end_date),
           category: campaign.category,
@@ -196,6 +199,8 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
       // Include success stories and volunteer roles in the form data
       const formDataWithStories = {
         ...data,
+        // Set goal_amount to null if hasGoal is false
+        goal_amount: hasGoal ? data.goal_amount : null,
         // success_stories: Array.isArray(successStories)
         //   ? successStories.filter(story => story.title.trim() && story.description.trim())
         //   : [],
@@ -352,24 +357,71 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
               )}
             </div>
 
-            {/* Goal Amount */}
+            {/* Goal Amount Toggle */}
             <div>
-              <label className="block text-sm font-medium text-theme-primary mb-2">
-                Goal Amount (USD) *
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="1"
-                {...register('goal_amount', {
-                  required: 'Goal amount is required',
-                  min: { value: 1, message: 'Goal amount must be at least $1' },
-                })}
-                className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="50000"
-              />
-              {errors.goal_amount && (
-                <p className="mt-1 text-sm text-red-600">{errors.goal_amount.message}</p>
+              <div className="flex items-center justify-between mb-4">
+                <label className="block text-sm font-medium text-theme-primary">
+                  Campaign Goal
+                </label>
+                <div className="flex items-center space-x-3">
+                  <span className={`text-sm ${!hasGoal ? 'text-theme-primary font-medium' : 'text-theme-muted'}`}>
+                    Open Goal
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setHasGoal(!hasGoal)}
+                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                      hasGoal ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                    }`}
+                  >
+                    <span
+                      className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                        hasGoal ? 'translate-x-6' : 'translate-x-1'
+                      }`}
+                    />
+                  </button>
+                  <span className={`text-sm ${hasGoal ? 'text-theme-primary font-medium' : 'text-theme-muted'}`}>
+                    Set Goal
+                  </span>
+                </div>
+              </div>
+
+              {hasGoal && (
+                <div>
+                  <label className="block text-sm font-medium text-theme-muted mb-2">
+                    Goal Amount (USD) *
+                  </label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="1"
+                    {...register('goal_amount', {
+                      required: hasGoal ? 'Goal amount is required when goal is set' : false,
+                      min: hasGoal ? { value: 1, message: 'Goal amount must be at least $1' } : undefined,
+                    })}
+                    className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="50000"
+                  />
+                  {errors.goal_amount && (
+                    <p className="mt-1 text-sm text-red-600">{errors.goal_amount.message}</p>
+                  )}
+                </div>
+              )}
+
+              {!hasGoal && (
+                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start space-x-3">
+                    <svg className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <div>
+                      <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200">Open Goal Campaign</h4>
+                      <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                        This campaign will accept any donation amount without a specific target goal.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
 

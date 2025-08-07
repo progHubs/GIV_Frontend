@@ -117,9 +117,10 @@ export const updatePost = async (
   // Add post data
   Object.entries(postData).forEach(([key, value]) => {
     if (value !== undefined && value !== null) {
-      if (typeof value === 'object') {
+      if (typeof value === 'object' && value !== null) {
         formData.append(key, JSON.stringify(value));
       } else {
+        // Ensure boolean values are properly converted to strings
         formData.append(key, String(value));
       }
     }
@@ -140,6 +141,12 @@ export const updatePost = async (
         formData.append('attachments', file);
       });
     }
+  }
+
+  // Debug: Log the form data to see what's being sent
+  console.log('UpdatePost FormData contents:');
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}: ${value}`);
   }
 
   return api.uploadPut<PostApiResponse>(`/posts/${id}`, formData);
@@ -415,17 +422,48 @@ export const updateComment = async (
 };
 
 /**
- * Delete a comment
+ * Delete a comment (user can only delete their own)
  */
 export const deleteComment = async (commentId: string): Promise<{ success: boolean; message: string }> => {
   return api.delete(`/comments/comments/${commentId}`);
 };
 
 /**
+ * Admin delete any comment
+ */
+export const adminDeleteComment = async (commentId: string): Promise<{ success: boolean; message: string }> => {
+  return api.delete(`/comments/comments/${commentId}/admin`);
+};
+
+/**
+ * Get all comments for admin management
+ */
+export const getAllCommentsForAdmin = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sort?: string;
+  filter?: string;
+}): Promise<CommentListApiResponse> => {
+  const queryParams = new URLSearchParams();
+
+  if (params) {
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== '') {
+        queryParams.append(key, String(value));
+      }
+    });
+  }
+
+  const url = `/comments/admin/comments${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+  return api.get<CommentListApiResponse>(url);
+};
+
+/**
  * Approve a comment (admin only)
  */
 export const approveComment = async (commentId: string): Promise<CommentApiResponse> => {
-  return api.put<CommentApiResponse>(`/comments/comments/${commentId}/approve`);
+  return api.post<CommentApiResponse>(`/comments/comments/${commentId}/approve`, { is_approved: true });
 };
 
 // ===================================

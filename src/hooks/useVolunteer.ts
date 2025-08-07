@@ -270,14 +270,14 @@ export const useVolunteerCampaignApplications = (
 /**
  * Hook for getting volunteer profile by ID
  */
-export const useVolunteerProfile = (userId?: string) => {
+export const useVolunteerProfile = (userId?: string, enabled: boolean = true) => {
   return useQuery({
     queryKey: volunteerQueryKeys.profile(userId),
     queryFn: () => {
       if (!userId) return userApi.getCurrentVolunteerProfile();
       return userApi.getVolunteerById(userId);
     },
-    enabled: !!userId || userId === undefined, // Enable for current user or specific user
+    enabled: enabled && (!!userId || userId === undefined), // Enable for current user or specific user, but only if enabled is true
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };

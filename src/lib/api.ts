@@ -120,11 +120,28 @@ apiClient.interceptors.response.use(
       originalRequest?.url?.includes('/auth/register') ||
       originalRequest?.url?.includes('/auth/refresh');
 
+    // Define public endpoints that don't require authentication
+    const isPublicEndpoint =
+      // Campaign endpoints (except volunteer applications)
+      (originalRequest?.url?.includes('/campaigns') &&
+       !originalRequest?.url?.includes('/volunteers/apply') &&
+       !originalRequest?.url?.includes('/volunteers') &&
+       originalRequest?.method?.toLowerCase() === 'get') ||
+      // Donation endpoints (GET only)
+      (originalRequest?.url?.includes('/donations') &&
+       originalRequest?.method?.toLowerCase() === 'get') ||
+      // Post endpoints
+      originalRequest?.url?.includes('/posts') ||
+      // Partner endpoints (GET only)
+      (originalRequest?.url?.includes('/partners') &&
+       originalRequest?.method?.toLowerCase() === 'get');
+
     if (
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !isAuthEndpoint
+      !isAuthEndpoint &&
+      !isPublicEndpoint
     ) {
       // If we're already refreshing, queue this request
       if (isRefreshing) {
@@ -193,6 +210,19 @@ apiClient.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
+    }
+
+    // Handle 401 errors for public endpoints - just clear invalid tokens and continue
+    if (error.response?.status === 401 && isPublicEndpoint) {
+      console.warn('Invalid token detected on public endpoint, clearing tokens');
+      clearTokens();
+
+      // Dispatch custom event to update auth state
+      window.dispatchEvent(
+        new CustomEvent('auth:token-cleared', {
+          detail: { reason: 'invalid_token_on_public_endpoint' },
+        })
+      );
     }
 
     // Transform backend error format to frontend format

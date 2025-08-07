@@ -1,44 +1,95 @@
 /**
  * Campaign Partners Component
  * Displays partner organizations supporting campaigns
+ * Can show either general partners or campaign-specific partners
  */
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import type { CampaignPartner } from '../../types/campaignPartner';
 
-const CampaignPartners: React.FC = () => {
-  const partners = [
+interface CampaignPartnersProps {
+  partners?: CampaignPartner[];
+  loading?: boolean;
+  error?: string | null;
+  title?: string;
+  description?: string;
+  showDescription?: boolean;
+  maxPartners?: number;
+  className?: string;
+}
+
+const CampaignPartners: React.FC<CampaignPartnersProps> = ({
+  partners = [],
+  loading = false,
+  error = null,
+  title = "Our Campaign Partners",
+  description = "Working together with leading organizations to maximize our impact and reach more communities in need.",
+  showDescription = true,
+  maxPartners,
+  className = "",
+}) => {
+  // Use provided partners or fallback to default partners for general display
+  const defaultPartners = [
     {
-      id: 1,
+      id: '1',
+      campaign_id: '',
       name: 'World Health Organization',
-      logo: '/api/placeholder/120/60',
+      logo_url: '/api/placeholder/120/60',
       description: 'Global health leadership',
+      sort_order: 0,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 2,
+      id: '2',
+      campaign_id: '',
       name: 'UNICEF Ethiopia',
-      logo: '/api/placeholder/120/60',
+      logo_url: '/api/placeholder/120/60',
       description: "Children's rights and wellbeing",
+      sort_order: 1,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 3,
+      id: '3',
+      campaign_id: '',
       name: 'Ethiopian Red Cross',
-      logo: '/api/placeholder/120/60',
+      logo_url: '/api/placeholder/120/60',
       description: 'Humanitarian assistance',
+      sort_order: 2,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 4,
+      id: '4',
+      campaign_id: '',
       name: 'Gates Foundation',
-      logo: '/api/placeholder/120/60',
+      logo_url: '/api/placeholder/120/60',
       description: 'Global health initiatives',
+      sort_order: 3,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
     {
-      id: 5,
+      id: '5',
+      campaign_id: '',
       name: 'Doctors Without Borders',
-      logo: '/api/placeholder/120/60',
+      logo_url: '/api/placeholder/120/60',
       description: 'Medical humanitarian aid',
+      sort_order: 4,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     },
-  ];
+  ] as CampaignPartner[];
+
+  const displayPartners = partners.length > 0 ? partners : defaultPartners;
+  const limitedPartners = maxPartners ? displayPartners.slice(0, maxPartners) : displayPartners;
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -61,8 +112,13 @@ const CampaignPartners: React.FC = () => {
     },
   };
 
+  // Don't render if no partners and not loading
+  if (!loading && limitedPartners.length === 0) {
+    return null;
+  }
+
   return (
-    <div className="bg-theme-background py-16">
+    <div className={`bg-theme-background py-16 ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
           variants={containerVariants}
@@ -74,20 +130,47 @@ const CampaignPartners: React.FC = () => {
           {/* Header */}
           <motion.div variants={itemVariants} className="mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-theme-primary mb-4">
-              Our Campaign Partners
+              {title}
             </h2>
-            <p className="text-lg text-theme-muted max-w-3xl mx-auto">
-              Working together with leading organizations to maximize our impact and reach more
-              communities in need.
-            </p>
+            {showDescription && (
+              <p className="text-lg text-theme-muted max-w-3xl mx-auto">
+                {description}
+              </p>
+            )}
           </motion.div>
 
+          {/* Loading State */}
+          {loading && (
+            <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8">
+              {[...Array(5)].map((_, index) => (
+                <div key={index} className="bg-theme-surface rounded-xl p-6 shadow-lg border border-theme animate-pulse">
+                  <div className="h-16 bg-gray-200 dark:bg-gray-700 rounded-lg mb-4"></div>
+                  <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded mb-2"></div>
+                  <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <motion.div variants={itemVariants} className="text-center py-8">
+              <div className="text-red-500 dark:text-red-400 mb-4">
+                <svg className="w-12 h-12 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                </svg>
+                <p className="text-sm">Failed to load partners</p>
+              </div>
+            </motion.div>
+          )}
+
           {/* Partners Grid */}
-          <motion.div
-            variants={itemVariants}
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center"
-          >
-            {partners.map(partner => (
+          {!loading && !error && limitedPartners.length > 0 && (
+            <motion.div
+              variants={itemVariants}
+              className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-8 items-center"
+            >
+              {limitedPartners.map(partner => (
               <motion.div
                 key={partner.id}
                 variants={itemVariants}
@@ -96,9 +179,22 @@ const CampaignPartners: React.FC = () => {
                 className="group"
               >
                 <div className="bg-theme-surface rounded-xl p-6 shadow-lg border border-theme hover:shadow-xl transition-all duration-300">
-                  {/* Partner Logo Placeholder */}
+                  {/* Partner Logo */}
                   <div className="h-16 flex items-center justify-center mb-4">
-                    <div className="w-full h-12 bg-gradient-to-r from-blue-400 to-green-400 rounded-lg flex items-center justify-center">
+                    {partner.logo_url ? (
+                      <img
+                        src={partner.logo_url}
+                        alt={`${partner.name} logo`}
+                        className="max-h-12 max-w-full object-contain"
+                        onError={(e) => {
+                          // Fallback to initials if image fails to load
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-12 bg-gradient-to-r from-blue-400 to-green-400 rounded-lg flex items-center justify-center ${partner.logo_url ? 'hidden' : ''}`}>
                       <span className="text-white font-bold text-sm">
                         {partner.name
                           .split(' ')
@@ -115,11 +211,26 @@ const CampaignPartners: React.FC = () => {
                   </h3>
 
                   {/* Partner Description */}
-                  <p className="text-xs text-theme-muted">{partner.description}</p>
+                  {showDescription && partner.description && (
+                    <p className="text-xs text-theme-muted mb-2">{partner.description}</p>
+                  )}
+
+                  {/* Partner Website Link */}
+                  {partner.website && (
+                    <a
+                      href={partner.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      Visit Website
+                    </a>
+                  )}
                 </div>
               </motion.div>
             ))}
           </motion.div>
+          )}
 
           {/* Partnership Benefits */}
           <motion.div

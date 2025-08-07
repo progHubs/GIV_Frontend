@@ -15,6 +15,7 @@ interface CampaignManagementTableProps {
   totalPages: number;
   onEdit: (campaign: Campaign) => void;
   onDelete: (id: string) => Promise<void>;
+  onManagePartners?: (campaign: Campaign) => void;
   onRetry: () => void;
   onPageChange: (page: number) => void;
 }
@@ -27,6 +28,7 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
   totalPages,
   onEdit,
   onDelete,
+  onManagePartners,
   onRetry,
   onPageChange,
 }) => {
@@ -259,6 +261,9 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
               <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
                 Created
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-theme-muted uppercase tracking-wider">
+                Partners
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-theme-muted uppercase tracking-wider">
                 Actions
               </th>
@@ -301,26 +306,36 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-primary">
-                  {formatCurrency(campaign.goal_amount)}
+                  {campaign.goal_amount ? (
+                    formatCurrency(campaign.goal_amount)
+                  ) : (
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400">
+                      Open Goal
+                    </span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-primary">
                   {formatCurrency(campaign.current_amount)}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="flex items-center">
-                    <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
-                      <div
-                        className="h-2 rounded-full"
-                        style={{
-                          width: `${Math.min(campaign.progress_percentage, 100)}%`,
-                          backgroundColor: campaign.progress_bar_color || '#3B82F6',
-                        }}
-                      />
+                  {campaign.progress_percentage !== null ? (
+                    <div className="flex items-center">
+                      <div className="w-16 bg-gray-200 dark:bg-gray-700 rounded-full h-2 mr-2">
+                        <div
+                          className="h-2 rounded-full"
+                          style={{
+                            width: `${Math.min(campaign.progress_percentage, 100)}%`,
+                            backgroundColor: campaign.progress_bar_color || '#3B82F6',
+                          }}
+                        />
+                      </div>
+                      <span className="text-sm text-theme-muted">
+                        {campaign.progress_percentage}%
+                      </span>
                     </div>
-                    <span className="text-sm text-theme-muted">
-                      {campaign.progress_percentage}%
-                    </span>
-                  </div>
+                  ) : (
+                    <span className="text-sm text-theme-muted">N/A</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">{getStatusBadge(campaign)}</td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-muted">
@@ -329,8 +344,27 @@ const CampaignManagementTable: React.FC<CampaignManagementTableProps> = ({
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-muted">
                   {formatDate(campaign.created_at)}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-theme-muted">
+                  <div className="flex items-center">
+                    <svg className="w-4 h-4 text-theme-muted mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                    </svg>
+                    {campaign.campaign_partners?.length || 0}
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <div className="flex items-center justify-end space-x-2">
+                    {onManagePartners && (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => onManagePartners(campaign)}
+                        className="text-purple-600 hover:text-purple-900 dark:hover:text-purple-400"
+                        title="Manage Partners"
+                      >
+                        Partners
+                      </motion.button>
+                    )}
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}

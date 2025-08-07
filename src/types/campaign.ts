@@ -1,6 +1,7 @@
 // Campaign Types and Interfaces
 
 import type { BaseEntity } from './api';
+import type { CampaignPartner } from './campaignPartner';
 
 // Default Volunteer Roles for Campaigns
 export const DEFAULT_VOLUNTEER_ROLES = [
@@ -50,7 +51,7 @@ export interface Campaign extends BaseEntity {
   title: string;
   slug: string;
   description: string;
-  goal_amount: string;
+  goal_amount: string | null;
   current_amount: string;
   start_date: string;
   end_date: string;
@@ -68,20 +69,21 @@ export interface Campaign extends BaseEntity {
   volunteer_hours_total?: number;
   language: string;
   translation_group_id: string;
-  progress_percentage: number;
+  progress_percentage: number | null;
   created_by: string;
   users?: {
     id: string;
     full_name: string;
     email: string;
   };
+  campaign_partners?: CampaignPartner[];
 }
 
 // Campaign Creation/Update Data
 export interface CampaignFormData {
   title: string;
   description: string;
-  goal_amount: number;
+  goal_amount?: number | null;
   start_date: string;
   end_date: string;
   category: CampaignCategory;

@@ -6,6 +6,7 @@
 import React, { useState, useCallback } from 'react';
 import { toast } from 'react-hot-toast';
 import { useCreateComment } from '../../hooks/useContent';
+import { useAuth } from '../../hooks/useAuth';
 import type { Comment } from '../../types/content';
 
 interface CommentFormProps {
@@ -19,6 +20,10 @@ const CommentForm: React.FC<CommentFormProps> = ({ postId, onCommentAdd }) => {
 
   // Hook for comment operations
   const createCommentMutation = useCreateComment();
+
+  // Get current user to check if admin
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
 
   // Memoized handler to prevent unnecessary re-renders
   const handleNewCommentChange = useCallback((value: string) => {
@@ -49,7 +54,16 @@ const CommentForm: React.FC<CommentFormProps> = ({ postId, onCommentAdd }) => {
       if (response?.data) {
         onCommentAdd(response.data);
         setNewComment('');
-        toast.success('Comment added successfully!');
+
+        if (isAdmin) {
+          toast.success('Comment added successfully!');
+        } else {
+          // Show approval notice for regular users
+          toast.success('Comment submitted! It will be visible after admin approval.', {
+            duration: 10000, // 10 seconds
+            icon: '⏳',
+          });
+        }
       }
     } catch (error: any) {
       console.error('Failed to add comment:', error);
@@ -62,7 +76,22 @@ const CommentForm: React.FC<CommentFormProps> = ({ postId, onCommentAdd }) => {
   return (
     <div className="bg-white py-6">
       <h3 className="text-lg font-semibold text-gray-900 mb-4">Leave a Comment</h3>
-      
+
+      {/* Approval Notice for Non-Admin Users */}
+      {!isAdmin && (
+        <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <div className="flex items-start space-x-2">
+            <svg className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-amber-800 font-medium">Comments require approval</p>
+              <p className="text-xs text-amber-700 mt-1">Your comment will be visible after it's reviewed and approved by an administrator.</p>
+            </div>
+          </div>
+        </div>
+      )}
+
       <form onSubmit={handleSubmitComment}>
         <div className="flex space-x-3">
           <img

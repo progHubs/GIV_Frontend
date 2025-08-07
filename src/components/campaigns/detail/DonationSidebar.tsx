@@ -18,8 +18,10 @@ const DonationSidebar: React.FC<DonationSidebarProps> = ({ campaign }) => {
   const queryClient = useQueryClient();
   // Calculate progress
   const currentAmount = parseFloat(campaign.current_amount);
-  const goalAmount = parseFloat(campaign.goal_amount);
-  const progressPercentage = Math.min((currentAmount / goalAmount) * 100, 100);
+  const goalAmount = campaign.goal_amount ? parseFloat(campaign.goal_amount) : null;
+  const progressPercentage = goalAmount && campaign.progress_percentage !== null
+    ? Math.min(campaign.progress_percentage, 100)
+    : null;
 
   // Calculate days remaining
   const getDaysRemaining = () => {
@@ -68,49 +70,77 @@ const DonationSidebar: React.FC<DonationSidebarProps> = ({ campaign }) => {
         className="bg-theme-surface rounded-2xl shadow-lg border border-theme p-6"
       >
         <div className="text-center">
-          {/* Circular Progress */}
-          <div className="relative w-32 h-32 mx-auto mb-4">
-            <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
-              {/* Background circle */}
-              <circle
-                cx="60"
-                cy="60"
-                r="54"
-                stroke="currentColor"
-                strokeWidth="8"
-                fill="transparent"
-                className="text-gray-200 dark:text-gray-700"
-              />
-              {/* Progress circle */}
-              <circle
-                cx="60"
-                cy="60"
-                r="54"
-                stroke={campaign.progress_bar_color || '#3B82F6'}
-                strokeWidth="8"
-                fill="transparent"
-                strokeDasharray={`${2 * Math.PI * 54}`}
-                strokeDashoffset={`${2 * Math.PI * 54 * (1 - progressPercentage / 100)}`}
-                className="transition-all duration-1000 ease-out"
-                strokeLinecap="round"
-              />
-            </svg>
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="text-2xl font-bold text-theme-primary">
-                {Math.round(progressPercentage)}%
-              </span>
-            </div>
-          </div>
+          {progressPercentage !== null && goalAmount ? (
+            // Campaign with goal - show circular progress
+            <>
+              {/* Circular Progress */}
+              <div className="relative w-32 h-32 mx-auto mb-4">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 120 120">
+                  {/* Background circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="transparent"
+                    className="text-gray-200 dark:text-gray-700"
+                  />
+                  {/* Progress circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    stroke={campaign.progress_bar_color || '#3B82F6'}
+                    strokeWidth="8"
+                    fill="transparent"
+                    strokeDasharray={`${2 * Math.PI * 54}`}
+                    strokeDashoffset={`${2 * Math.PI * 54 * (1 - progressPercentage / 100)}`}
+                    className="transition-all duration-1000 ease-out"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-theme-primary">
+                    {Math.round(progressPercentage)}%
+                  </span>
+                </div>
+              </div>
 
-          {/* Amount Progress */}
-          <div className="space-y-1">
-            <div className="text-2xl font-bold text-theme-primary">
-              {formatCurrency(currentAmount)}
-            </div>
-            <div className="text-sm text-theme-muted">
-              raised of {formatCurrency(goalAmount)} goal
-            </div>
-          </div>
+              {/* Amount Progress */}
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-theme-primary">
+                  {formatCurrency(currentAmount)}
+                </div>
+                <div className="text-sm text-theme-muted">
+                  raised of {formatCurrency(goalAmount)} goal
+                </div>
+              </div>
+            </>
+          ) : (
+            // Campaign without goal - show amount raised with open goal indicator
+            <>
+              {/* Open Goal Icon */}
+              <div className="w-32 h-32 mx-auto mb-4 flex items-center justify-center bg-gradient-to-br from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 rounded-full border-4 border-blue-200 dark:border-blue-700">
+                <div className="text-center">
+                  <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                  </svg>
+                  <span className="text-xs font-medium text-blue-600 dark:text-blue-400">Open Goal</span>
+                </div>
+              </div>
+
+              {/* Amount Raised */}
+              <div className="space-y-1">
+                <div className="text-2xl font-bold text-theme-primary">
+                  {formatCurrency(currentAmount)}
+                </div>
+                <div className="text-sm text-theme-muted">
+                  raised • Any amount welcome
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Stats Grid */}

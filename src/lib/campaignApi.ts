@@ -245,7 +245,10 @@ export const campaignApi = {
 
         // Append all campaign data
         Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
+          // Send empty string for null goal_amount (optional goal)
+          if (key === 'goal_amount' && value === null) {
+            formData.append(key, '');
+          } else if (value !== undefined && value !== null && value !== '') {
             if (Array.isArray(value)) {
               formData.append(key, JSON.stringify(value));
             } else {
@@ -281,7 +284,10 @@ export const campaignApi = {
 
         // Append all campaign data
         Object.entries(data).forEach(([key, value]) => {
-          if (value !== undefined && value !== null && value !== '') {
+          // Send empty string for null goal_amount (optional goal)
+          if (key === 'goal_amount' && value === null) {
+            formData.append(key, '');
+          } else if (value !== undefined && value !== null && value !== '') {
             if (Array.isArray(value)) {
               formData.append(key, JSON.stringify(value));
             } else {

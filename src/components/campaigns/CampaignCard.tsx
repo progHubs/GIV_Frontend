@@ -144,27 +144,48 @@ const CampaignCard: React.FC<CampaignCardProps> = ({
         {/* Progress Section */}
         {showProgress && (
           <div className="mb-4">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-theme-primary">
-                {formatCurrency(campaign.current_amount)} raised
-              </span>
-              <span className="text-sm text-theme-muted">{campaign.progress_percentage}%</span>
-            </div>
+            {campaign.goal_amount && campaign.progress_percentage !== null ? (
+              // Campaign with goal - show progress bar
+              <>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-theme-primary">
+                    {formatCurrency(campaign.current_amount)} raised
+                  </span>
+                  <span className="text-sm text-theme-muted">{campaign.progress_percentage}%</span>
+                </div>
 
-            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
-              <motion.div
-                initial={{ width: 0 }}
-                animate={{ width: `${Math.min(campaign.progress_percentage, 100)}%` }}
-                transition={{ duration: 1, delay: 0.2 }}
-                className="h-2 rounded-full"
-                style={{ backgroundColor: campaign.progress_bar_color || '#3B82F6' }}
-              />
-            </div>
+                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2 mb-2">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(campaign.progress_percentage, 100)}%` }}
+                    transition={{ duration: 1, delay: 0.2 }}
+                    className="h-2 rounded-full"
+                    style={{ backgroundColor: campaign.progress_bar_color || '#3B82F6' }}
+                  />
+                </div>
 
-            <div className="flex justify-between items-center text-xs text-theme-muted">
-              <span>Goal: {formatCurrency(campaign.goal_amount)}</span>
-              <span>{campaign.donor_count} donors</span>
-            </div>
+                <div className="flex justify-between items-center text-xs text-theme-muted">
+                  <span>Goal: {formatCurrency(campaign.goal_amount)}</span>
+                  <span>{campaign.donor_count} donors</span>
+                </div>
+              </>
+            ) : (
+              // Campaign without goal - show raised amount and donors only
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-theme-primary">
+                    {formatCurrency(campaign.current_amount)} raised
+                  </span>
+                  <span className="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400 rounded-full">
+                    Open Goal
+                  </span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-theme-muted">
+                  <span>Any amount welcome</span>
+                  <span>{campaign.donor_count} donors</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
