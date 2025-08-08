@@ -17,11 +17,12 @@ interface VolunteerProfileCreationFormProps {
 // Available volunteer roles/areas of interest
 const VOLUNTEER_ROLES = [
   'Dermatologist',
-  'Radiologist',
   'Gynecologist',
   'Data Collectors',
   'Internists',
-  'Optometrists',
+  'Ophthalmologist',
+  'ENT Specialist',
+  'Pediatrician',
   'Public Health',
   'Medical Student',
   'General Practitioners',
@@ -30,6 +31,7 @@ const VOLUNTEER_ROLES = [
   'Intern',
   'Nurse',
   'Social worker',
+  'Other volunteers',
 ];
 
 interface FormData extends VolunteerProfileUpdateRequest {
@@ -44,6 +46,7 @@ const VolunteerProfileCreationForm: React.FC<VolunteerProfileCreationFormProps> 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [files, setFiles] = useState<File[]>([]);
+  const [customRoles, setCustomRoles] = useState<string>('');
 
   const {
     register,
@@ -51,6 +54,10 @@ const VolunteerProfileCreationForm: React.FC<VolunteerProfileCreationFormProps> 
     formState: { errors },
     watch,
   } = useForm<FormData>();
+
+  // Watch for "Other volunteers" selection
+  const selectedRoles = watch('volunteer_roles') || [];
+  const hasOtherSelected = selectedRoles.includes('Other volunteers');
 
   const isLicensedPractitioner = watch('is_licensed_practitioner');
 
@@ -60,10 +67,27 @@ const VolunteerProfileCreationForm: React.FC<VolunteerProfileCreationFormProps> 
       setLoading(true);
       setError(null);
 
+      // Process volunteer roles - combine selected roles with custom roles
+      let allRoles = data.volunteer_roles || [];
+
+      // If "Other volunteers" is selected and custom roles are provided
+      if (hasOtherSelected && customRoles.trim()) {
+        // Remove "Other volunteers" from the list and add custom roles
+        allRoles = allRoles.filter(role => role !== 'Other volunteers');
+
+        // Parse custom roles (comma-separated) and add them
+        const customRolesList = customRoles
+          .split(',')
+          .map(role => role.trim())
+          .filter(role => role.length > 0);
+
+        allRoles = [...allRoles, ...customRolesList];
+      }
+
       // Process the data
       const processedData: VolunteerProfileUpdateRequest = {
         ...data,
-        volunteer_roles: data.volunteer_roles || [],
+        volunteer_roles: allRoles,
       };
 
       // Pass data and files together
@@ -164,6 +188,25 @@ const VolunteerProfileCreationForm: React.FC<VolunteerProfileCreationFormProps> 
               <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
                 Select all areas that match your expertise or interest
               </p>
+
+              {/* Custom Roles Input - Show when "Other volunteers" is selected */}
+              {hasOtherSelected && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Please specify your specialty or role
+                  </label>
+                  <input
+                    type="text"
+                    value={customRoles}
+                    onChange={(e) => setCustomRoles(e.target.value)}
+                    placeholder="e.g., Cardiologist, Community Organizer, IT Specialist"
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    If you have multiple specialties or roles, please separate them with commas
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Licensed Practitioner */}

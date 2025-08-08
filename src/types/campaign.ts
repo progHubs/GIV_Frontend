@@ -6,11 +6,12 @@ import type { CampaignPartner } from './campaignPartner';
 // Default Volunteer Roles for Campaigns
 export const DEFAULT_VOLUNTEER_ROLES = [
   'Dermatologist',
-  'Radiologist',
   'Gynecologist',
   'Data Collectors',
   'Internists',
-  'Optometrists',
+  'Ophthalmologist',
+  'ENT Specialist',
+  'Pediatrician',
   'Public Health',
   'Medical Student',
   'General Practitioners',
@@ -19,6 +20,7 @@ export const DEFAULT_VOLUNTEER_ROLES = [
   'Intern',
   'Nurse',
   'Social worker',
+  'Other volunteers',
 ] as const;
 
 export type VolunteerRole = (typeof DEFAULT_VOLUNTEER_ROLES)[number];

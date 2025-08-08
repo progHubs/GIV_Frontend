@@ -66,6 +66,25 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
   const [selectedVolunteerRoles, setSelectedVolunteerRoles] = useState<string[]>(
     parseVolunteerRoles(campaign?.volunteer_roles)
   );
+  const [customVolunteerRoles, setCustomVolunteerRoles] = useState<string>('');
+
+  // Check if "Other volunteers" is selected or if there are custom roles
+  const hasOtherVolunteersSelected = selectedVolunteerRoles.includes('Other volunteers');
+
+  // Initialize custom roles from existing campaign data
+  React.useEffect(() => {
+    if (campaign?.volunteer_roles) {
+      const existingRoles = parseVolunteerRoles(campaign.volunteer_roles);
+      const customRoles = existingRoles.filter(role => !DEFAULT_VOLUNTEER_ROLES.includes(role));
+      if (customRoles.length > 0) {
+        setCustomVolunteerRoles(customRoles.join(', '));
+        // Add "Other volunteers" to selected roles if not already present
+        if (!selectedVolunteerRoles.includes('Other volunteers')) {
+          setSelectedVolunteerRoles([...selectedVolunteerRoles, 'Other volunteers']);
+        }
+      }
+    }
+  }, [campaign]);
 
   // Helper function to safely format date for input
   const formatDateForInput = (dateInput: any): string => {
@@ -191,6 +210,27 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
     { value: '#F97316', label: 'Orange', color: 'bg-orange-500' },
   ];
 
+  // Process volunteer roles - combine selected roles with custom roles
+  const processVolunteerRoles = (): string => {
+    let allRoles = [...selectedVolunteerRoles];
+
+    // If "Other volunteers" is selected and custom roles are provided
+    if (hasOtherVolunteersSelected && customVolunteerRoles.trim()) {
+      // Remove "Other volunteers" from the list and add custom roles
+      allRoles = allRoles.filter(role => role !== 'Other volunteers');
+
+      // Parse custom roles (comma-separated) and add them
+      const customRolesList = customVolunteerRoles
+        .split(',')
+        .map(role => role.trim())
+        .filter(role => role.length > 0);
+
+      allRoles = [...allRoles, ...customRolesList];
+    }
+
+    return allRoles.join(',');
+  };
+
   const onFormSubmit = async (data: CampaignFormData) => {
     try {
       setLoading(true);
@@ -204,7 +244,7 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
         // success_stories: Array.isArray(successStories)
         //   ? successStories.filter(story => story.title.trim() && story.description.trim())
         //   : [],
-        volunteer_roles: selectedVolunteerRoles.join(','),
+        volunteer_roles: processVolunteerRoles(),
       };
 
       // Prepare files for upload
@@ -650,6 +690,25 @@ const CampaignForm: React.FC<CampaignFormProps> = ({ mode, campaign, onSubmit, o
               <div className="mt-2 text-sm text-theme-muted">
                 Selected: {selectedVolunteerRoles.length} role(s)
               </div>
+
+              {/* Custom Roles Input - Show when "Other volunteers" is selected */}
+              {hasOtherVolunteersSelected && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <label className="block text-sm font-medium text-theme-primary mb-2">
+                    Please specify additional volunteer roles needed
+                  </label>
+                  <input
+                    type="text"
+                    value={customVolunteerRoles}
+                    onChange={(e) => setCustomVolunteerRoles(e.target.value)}
+                    placeholder="e.g., Cardiologist, Community Organizer, IT Specialist"
+                    className="w-full px-3 py-2 border border-theme rounded-lg bg-theme-background text-theme-primary focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  />
+                  <p className="mt-1 text-xs text-theme-muted">
+                    If you need multiple specialized roles, please separate them with commas
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Success Stories */}
