@@ -208,6 +208,114 @@ const urlSchema = z
     }
   }, 'Invalid URL format');
 
+// Date validation schema
+const dateSchema = z
+  .string()
+  .min(1, 'Date is required')
+  .refine((date) => {
+    // Check if it's a valid date format (YYYY-MM-DD)
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) return false;
+
+    // Check if it's a valid date
+    const parsedDate = new Date(date);
+    return !isNaN(parsedDate.getTime()) && parsedDate.toISOString().split('T')[0] === date;
+  }, 'Invalid date format. Please use YYYY-MM-DD format')
+  .refine((date) => {
+    // Check if date is not in the past (for events)
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const eventDate = new Date(date);
+    return eventDate >= today;
+  }, 'Event date cannot be in the past');
+
+// Time validation schema
+const timeSchema = z
+  .string()
+  .min(1, 'Time is required')
+  .refine((time) => {
+    // Check if it's a valid time format (HH:MM or HH:MM:SS)
+    const timeRegex = /^([01]?[0-9]|2[0-3]):[0-5][0-9](:[0-5][0-9])?$/;
+    return timeRegex.test(time);
+  }, 'Invalid time format. Please use HH:MM format');
+
+// Positive integer validation schema (base)
+const positiveIntegerSchema = z
+  .number()
+  .int('Must be a whole number')
+  .positive('Must be a positive number')
+  .or(
+    z.string()
+      .min(1, 'Value is required')
+      .refine((val) => !isNaN(Number(val)) && Number(val) > 0 && Number.isInteger(Number(val)),
+        'Must be a positive whole number')
+      .transform((val) => Number(val))
+  );
+
+// Specific schemas for different use cases
+const capacitySchema = z
+  .number()
+  .int('Capacity must be a whole number')
+  .positive('Capacity must be a positive number')
+  .optional()
+  .or(
+    z.string()
+      .optional()
+      .refine((val) => {
+        if (!val || val.trim() === '') return true;
+        const num = Number(val);
+        return !isNaN(num) && num > 0 && Number.isInteger(num);
+      }, 'Capacity must be a positive whole number')
+      .transform((val) => val && val.trim() !== '' ? Number(val) : undefined)
+  );
+
+const quantitySchema = z
+  .number()
+  .int('Quantity must be a whole number')
+  .min(1, 'Quantity must be at least 1')
+  .max(10, 'Quantity cannot exceed 10')
+  .default(1)
+  .or(
+    z.string()
+      .min(1, 'Quantity is required')
+      .refine((val) => {
+        const num = Number(val);
+        return !isNaN(num) && num >= 1 && num <= 10 && Number.isInteger(num);
+      }, 'Quantity must be a whole number between 1 and 10')
+      .transform((val) => Number(val))
+  );
+
+const hoursCommittedSchema = z
+  .number()
+  .int('Hours must be a whole number')
+  .min(1, 'Hours committed must be at least 1')
+  .max(100, 'Hours committed cannot exceed 100')
+  .default(8)
+  .or(
+    z.string()
+      .min(1, 'Hours committed is required')
+      .refine((val) => {
+        const num = Number(val);
+        return !isNaN(num) && num >= 1 && num <= 100 && Number.isInteger(num);
+      }, 'Hours committed must be a whole number between 1 and 100')
+      .transform((val) => Number(val))
+  );
+
+// Currency validation schema
+const currencySchema = z
+  .number()
+  .min(0, 'Amount cannot be negative')
+  .max(1000000, 'Amount cannot exceed 1,000,000')
+  .or(
+    z.string()
+      .refine((val) => {
+        if (!val || val.trim() === '') return true; // Allow empty for optional fields
+        const num = Number(val);
+        return !isNaN(num) && num >= 0 && num <= 1000000;
+      }, 'Invalid amount. Must be between 0 and 1,000,000')
+      .transform((val) => val ? Number(val) : 0)
+  );
+
 // Post creation schema
 export const createPostSchema = z.object({
   title: postTitleSchema,
@@ -295,3 +403,194 @@ export type UpdatePostFormData = z.infer<typeof updatePostSchema>;
 export type CommentFormData = z.infer<typeof commentSchema>;
 export type UpdateCommentFormData = z.infer<typeof updateCommentSchema>;
 export type PostQueryFormData = z.infer<typeof postQuerySchema>;
+
+// Event validation schemas
+export const eventSchema = z.object({
+  title: z
+    .string()
+    .min(1, 'Event title is required')
+    .min(3, 'Event title must be at least 3 characters')
+    .max(255, 'Event title must not exceed 255 characters')
+    .transform((title) => title.trim()),
+
+  description: z
+    .string()
+    .optional()
+    .refine((desc) => !desc || desc.trim().length >= 10, 'Description must be at least 10 characters if provided')
+    .transform((desc) => desc?.trim()),
+
+  event_date: dateSchema,
+  event_time: timeSchema,
+
+  timezone: z
+    .string()
+    .min(1, 'Timezone is required')
+    .default('UTC'),
+
+  location: z
+    .string()
+    .optional()
+    .refine((loc) => !loc || loc.trim().length >= 3, 'Location must be at least 3 characters if provided')
+    .transform((loc) => loc?.trim()),
+
+  latitude: z
+    .number()
+    .min(-90, 'Latitude must be between -90 and 90')
+    .max(90, 'Latitude must be between -90 and 90')
+    .optional(),
+
+  longitude: z
+    .number()
+    .min(-180, 'Longitude must be between -180 and 180')
+    .max(180, 'Longitude must be between -180 and 180')
+    .optional(),
+
+  category: z
+    .enum(['medical_conference', 'health_screening', 'community_outreach', 'training_workshop', 'awareness_campaign', 'fundraising', 'networking', 'educational', 'other'])
+    .optional(),
+
+  capacity: capacitySchema,
+
+  registration_deadline: z
+    .string()
+    .datetime()
+    .optional(),
+
+  agenda: z
+    .string()
+    .optional()
+    .transform((agenda) => agenda?.trim()),
+
+  speaker_info: z
+    .any()
+    .optional(),
+
+  requirements: z
+    .string()
+    .optional()
+    .transform((req) => req?.trim()),
+
+  price: currencySchema.default(0),
+
+  is_free: z
+    .boolean()
+    .default(true),
+
+  is_featured: z
+    .boolean()
+    .default(false),
+
+  volunteer_roles: z
+    .string()
+    .optional()
+    .transform((roles) => roles?.trim()),
+
+  language: z
+    .enum(['en', 'am'])
+    .default('en'),
+
+  status: z
+    .enum(['upcoming', 'ongoing', 'completed', 'cancelled'])
+    .default('upcoming'),
+});
+
+export const eventUpdateSchema = eventSchema.partial();
+
+// Event registration schema
+export const eventRegistrationSchema = z.object({
+  event_id: z.string().min(1, 'Event ID is required'),
+  user_id: z.string().optional(),
+  guest_name: nameSchema.optional(),
+  guest_email: emailSchema.optional(),
+  guest_phone: phoneSchema.optional(),
+  special_requirements: z
+    .string()
+    .optional()
+    .transform((req) => req?.trim()),
+});
+
+// Event ticket purchase schema
+export const eventTicketPurchaseSchema = z.object({
+  event_id: z.string().min(1, 'Event ID is required'),
+  quantity: quantitySchema,
+  special_requirements: z
+    .string()
+    .optional()
+    .transform((req) => req?.trim()),
+  guest_info: z
+    .array(z.object({
+      name: nameSchema,
+      email: emailSchema,
+      phone: phoneSchema.optional(),
+    }))
+    .optional(),
+});
+
+// Event volunteer application schema
+export const eventVolunteerApplicationSchema = z.object({
+  event_id: z.string().min(1, 'Event ID is required'),
+  hours_committed: hoursCommittedSchema,
+  application_notes: z
+    .string()
+    .optional()
+    .transform((notes) => notes?.trim()),
+  volunteer_roles: z
+    .array(z.string())
+    .min(1, 'At least one volunteer role must be selected'),
+  custom_roles: z
+    .string()
+    .optional()
+    .transform((roles) => roles?.trim()),
+  availability: z
+    .string()
+    .optional()
+    .transform((avail) => avail?.trim()),
+  experience: z
+    .string()
+    .optional()
+    .transform((exp) => exp?.trim()),
+  motivation: z
+    .string()
+    .optional()
+    .transform((mot) => mot?.trim()),
+  emergency_contact: z
+    .object({
+      name: nameSchema,
+      phone: z.string().min(1, 'Emergency contact phone is required'),
+      relationship: z.string().min(1, 'Emergency contact relationship is required'),
+    })
+    .optional(),
+});
+
+// Event partner schema
+export const eventPartnerSchema = z.object({
+  name: z
+    .string()
+    .min(1, 'Partner name is required')
+    .min(2, 'Partner name must be at least 2 characters')
+    .max(255, 'Partner name must not exceed 255 characters')
+    .transform((name) => name.trim()),
+
+  website: urlSchema.optional(),
+
+  description: z
+    .string()
+    .optional()
+    .refine((desc) => !desc || desc.length <= 1000, 'Description must not exceed 1000 characters')
+    .transform((desc) => desc?.trim()),
+
+  is_active: z
+    .boolean()
+    .default(true),
+});
+
+export const eventPartnerUpdateSchema = eventPartnerSchema.partial();
+
+// Event type exports
+export type EventFormData = z.infer<typeof eventSchema>;
+export type EventUpdateFormData = z.infer<typeof eventUpdateSchema>;
+export type EventRegistrationFormData = z.infer<typeof eventRegistrationSchema>;
+export type EventTicketPurchaseFormData = z.infer<typeof eventTicketPurchaseSchema>;
+export type EventVolunteerApplicationFormData = z.infer<typeof eventVolunteerApplicationSchema>;
+export type EventPartnerFormData = z.infer<typeof eventPartnerSchema>;
+export type EventPartnerUpdateFormData = z.infer<typeof eventPartnerUpdateSchema>;

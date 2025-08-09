@@ -8,6 +8,12 @@ export * from './useVolunteer';
 export * from './useUserManagement';
 export * from './useStripe';
 
+// Event-related hooks
+export * from './useEvents';
+export * from './useEventTickets';
+export * from './useEventVolunteers';
+export * from './useEventPartners';
+
 // Content Management System hooks
 export * from './useContent';
 export * from './useContentSearch';

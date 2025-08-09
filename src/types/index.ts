@@ -12,6 +12,18 @@ export * from './campaign';
 // Campaign Partner types
 export * from './campaignPartner';
 
+// Event types
+export * from './event';
+
+// Event Ticket types
+export * from './eventTicket';
+
+// Event Volunteer types
+export * from './eventVolunteer';
+
+// Event Partner types
+export * from './eventPartner';
+
 // Donation types
 export * from './donation';
 
